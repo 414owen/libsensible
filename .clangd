@@ -1,7 +1,3 @@
-# SPDX-FileCopyrightText: 2023 The libsensible Authors
-#
-# SPDX-License-Identifier: Unlicense
-
 CompileFlags:
   Add: [-xc, -std=c99, -Wall, -Wextra, -pedantic]
   Remove: -W*

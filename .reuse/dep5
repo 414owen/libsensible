@@ -5,5 +5,13 @@ Source: https://github.com/414owen/libsensible
 
 
 Files: flake.lock
-Copyright: 2023 The libsensible Authors <owen@owen.cafe>
+Copyright: 2023 The libsensible Authors
+License: Unlicense
+
+Files: .clangd
+Copyright: 2023 The libsensible Authors
+License: Unlicense
+
+Files: .envrc
+Copyright: 2023 The libsensible Authors
 License: Unlicense
