@@ -306,12 +306,18 @@ static
 void sentest_vfailf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, va_list ap) {
   const char *fmt1 = "In %s line %zu: ";
   int size = snprintf(NULL, 0, fmt1, file, line);
-  size += vsnprintf(NULL, 0, fmt, ap);
+  {
+    va_list ap1;
+    va_copy(ap1, ap);
+    size += vsnprintf(NULL, 0, fmt, ap1);
+  }
   char *buf = malloc(size + 1);
-  char *pos = buf;
-  pos += sprintf(buf, fmt1, file, line);
-  pos += vsprintf(pos, fmt, ap);
-  *pos = '\0';
+  {
+    char *pos = buf;
+    pos += sprintf(buf, fmt1, file, line);
+    pos += vsprintf(pos, fmt, ap);
+    *pos = '\0';
+  }
   sentest_fail_with(state, buf);
 }
 
