@@ -17,6 +17,8 @@
           pkgs.clang-tools
           pkgs.clang-tools.clang
           pkgs.cmake
+          pkgs.gdb
+          pkgs.valgrind
         ];
       };
     });
