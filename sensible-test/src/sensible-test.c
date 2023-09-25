@@ -207,14 +207,6 @@ void sentest_group_end(struct sentest_state *state) {
   }
 }
 
-static
-char *sentest_ne_reason(char *a_name, char *b_name) {
-  static const int base_len = strlen("Assert failed: '' != ''");
-  char *res = malloc(base_len + strlen(a_name) + strlen(b_name) + 1);
-  sprintf(res, "Assert failed: '%s' != '%s'", a_name, b_name);
-  return res;
-}
-
 // Static to avoid someone failing with a non-alloced string
 static
 void sentest_fail_with(struct sentest_state *state, char *reason) {
@@ -238,28 +230,51 @@ void sentest_fail_with(struct sentest_state *state, char *reason) {
   }
 }
 
-void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...) {
+static
+void sentest_vfailf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, va_list ap) {
   const char *fmt1 = "In %s line %zu: ";
   int size = snprintf(NULL, 0, fmt1, file, line);
-  va_list ap;
-  va_start(ap, fmt);
-  size += snprintf(NULL, 0, fmt, ap);
+  size += vsnprintf(NULL, 0, fmt, ap);
   char *buf = malloc(size + 1);
   char *pos = buf;
   pos += sprintf(buf, fmt1, file, line);
   pos += vsprintf(pos, fmt, ap);
   *pos = '\0';
-  va_end(ap);
   sentest_fail_with(state, buf);
 }
 
-void sentest_fail_eq(struct sentest_state *state, char *a, char *b) {
-  sentest_fail_with(state, sentest_ne_reason(a, b));
+void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  sentest_vfailf_internal(state, file, line, fmt, ap);
+  va_end(ap);
+}
+
+bool sentest_assertf_internal(struct sentest_state *state, bool cond, const char *file, size_t line, const char *fmt, ...) {
+  if (cond) { return false; }
+  va_list ap;
+  va_start(ap, fmt);
+  sentest_vfailf_internal(state, file, line, fmt, ap);
+  va_end(ap);
+  return true;
+}
+
+bool sentest_assert_eq_internal(struct sentest_state *state, bool is_equal, const char *file, size_t line, char *a, char *b) {
+  if (is_equal) return false;
+  sentest_failf_internal(state, file, line, "Assert failed: '%s' == '%s'", a, b);
+  return true;
+}
+
+bool sentest_assert_neq_internal(struct sentest_state *state, bool is_equal, const char *file, size_t line, char *a, char *b) {
+  if (!is_equal) return false;
+  sentest_failf_internal(state, file, line, "Assert failed: '%s' != '%s'", a, b);
+  return true;
 }
 
 void sentest_start_internal(struct sentest_state *state, char *name) {
   assert(!state->in_test);
   assert(state->path.length > 0);
+  sentest_vec_string_push(&state->path, name);
   state->in_test = true;
   sentest_print_depth_indent(state);
   fputs(name, state->config.output);
@@ -287,6 +302,7 @@ void sentest_end_internal(struct sentest_state *state) {
     sentest_color(state, TERM_RESET));
   if (!state->current_failed)
     state->tests_passed++;
+  state->path.length--;
   state->tests_run++;
   state->in_test = false;
   if (state->config.junit_output_path) {
@@ -366,7 +382,9 @@ void sentest_print_failure(struct sentest_state *state, struct sentest_failure f
     sentest_color(state, TERM_RESET));
   sentest_print_test_path(f.path, state->config.output);
   putc('\n', state->config.output);
-  puts(f.reason);
+  fputs(f.reason, state->config.output);
+  putc('\n', state->config.output);
+  fflush(state->config.output);
 }
 
 static
@@ -494,17 +512,16 @@ void sentest_write_results(struct sentest_state *state) {
   }
   fputs("</testsuites>\n", f);
 
-  fflush(f);
+  fclose(f);
   free(aggs.data);
   free(class_path.data);
 }
 
-bool sentest_matches(struct sentest_state *restrict state,
-                  char *restrict test_name) {
+static
+bool sentest_matches(struct sentest_state *restrict state) {
   if (state->filter_str == NULL) {
     return true;
   }
-  sentest_vec_string_push(&state->path, test_name);
   // TODO remove this, by treating the current path as a stack allocator
   // or alternatively, match on the vec_string directly
   char *path_string = sentest_print_test_path_string(state->path);
@@ -515,7 +532,7 @@ bool sentest_matches(struct sentest_state *restrict state,
 }
 
 bool sentest_test_should_continue(struct sentest_state *restrict state) {
-  return state->in_test;
+  return state->in_test && sentest_matches(state);
 }
 
 bool sentest_group_should_continue(struct sentest_state *restrict state) {
@@ -531,6 +548,7 @@ int sentest_finish(struct sentest_state *state) {
   sentest_print_failures(state);
   sentest_write_results(state);
   int res = state->failures.length > 0 ? 1 : 0;
+  fflush(state->config.output);
   free(state);
   return res;
 }

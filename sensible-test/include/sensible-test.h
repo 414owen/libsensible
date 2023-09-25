@@ -25,18 +25,20 @@ struct sentest_config {
   for (sentest_group_start(state, desc); sentest_group_should_continue(state); sentest_group_end(state))
 
 #define sentest_assert(state, b)                                               \
-  (!(b)) ? sentest_fail_eq(state, #b, "true"), true : false
+  sentest_assert_eq_internal(state, (b), __FILE__, __LINE__, #b, "true")
 
 #define sentest_assert_eq(state, a, b)                                         \
-  ((a) != (b)) ? sentest_fail_eq(state, #a, #b), true : false
+  sentest_assert_eq_internal(state, (a) == (b), __FILE__, __LINE__, #a, #b)
 
 #define sentest_assert_eq_fmt(state, a, b, fmt)                                \
-  ((a) != (b)) ? sentest_failf(state, #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b), true : false
+  sentest_assertf(state, ((a) != (b)), #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b)
 
 #define sentest_assert_neq(state, a, b)                                        \
-  ((a) == (b)) ? sentest_fail_eq(state, #a, #b), true : false
+  sentest_assert_neq_internal(state, ((a) == (b)), __FILE__, __LINE__, #a, #b)
 
 #define sentest_failf(state, fmt, ...) sentest_failf_internal(state, __FILE__, __LINE__, fmt, __VA_ARGS__)
+
+#define sentest_assertf(state, assertion, fmt, ...) sentest_assertf_internal(struct sentest_state *state, assertion, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
 struct sentest_state;
 
@@ -48,9 +50,11 @@ void sentest_group_start(struct sentest_state *state, char *name);
 void sentest_end_internal(struct sentest_state *state);
 void sentest_start_internal(struct sentest_state *state, char *name);
 
-void sentest_fail_eq(struct sentest_state *state, char *a, char *b);
-
-bool sentest_matches(struct sentest_state *state, char *test_name);
+// Returns true on assertion failue
+bool sentest_assertf_internal(struct sentest_state *state, bool cond, const char *file, size_t line, const char *fmt, ...);
+// Returns true if equal, false if not equal
+bool sentest_assert_eq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
+bool sentest_assert_neq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
 
 bool sentest_group_should_continue(struct sentest_state *state);
 bool sentest_test_should_continue(struct sentest_state *state);
