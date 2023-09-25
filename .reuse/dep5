@@ -1,0 +1,9 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: libsensible
+Upstream-Contact: Owen Shepherd <owen@owen.cafe>
+Source: https://github.com/414owen/libsensible
+
+
+Files: flake.lock
+Copyright: 2023 The libsensible Authors <owen@owen.cafe>
+License: Unlicense
