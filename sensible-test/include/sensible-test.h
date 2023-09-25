@@ -44,20 +44,21 @@ struct sentest_state;
 
 struct sentest_state *sentest_start(struct sentest_config config);
 
-void sentest_group_end(struct sentest_state *state);
 void sentest_group_start(struct sentest_state *state, char *name);
+bool sentest_group_should_continue(struct sentest_state *state);
+void sentest_group_end(struct sentest_state *state);
 
 void sentest_end_internal(struct sentest_state *state);
+bool sentest_test_should_continue(struct sentest_state *state);
 void sentest_start_internal(struct sentest_state *state, char *name);
 
 // Returns true on assertion failue
 bool sentest_assertf_internal(struct sentest_state *state, bool cond, const char *file, size_t line, const char *fmt, ...);
+void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...);
+
 // Returns true if equal, false if not equal
 bool sentest_assert_eq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
 bool sentest_assert_neq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
 
-bool sentest_group_should_continue(struct sentest_state *state);
-bool sentest_test_should_continue(struct sentest_state *state);
 
 int sentest_finish(struct sentest_state *state);
-void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...);

@@ -50,7 +50,7 @@ int main(void) {
     .filter_str = NULL,
     .junit_output_path = DEVNULL,
   };
-  int n = 10000000;
+  int n = 1000000;
 
   {
     double start_time = (double)clock()/CLOCKS_PER_SEC;
