@@ -8,6 +8,16 @@
 #include <stdint.h>
 #include <time.h>
 
+#define MERGE_(a,b) a##b
+#define LABEL_(a) MERGE_(unique_name_, a)
+#define UNIQUE_NAME LABEL_(__LINE__)
+
+#define test(state, desc)                                              \
+  for (test_start_internal(state, desc); (state)->in_test; test_end_internal(state))
+
+#define test_group(state, desc)                                              \
+  for (test_group_start(state, desc); test_group_should_continue(state); test_group_end(state))
+
 #define test_assert(state, b)                                                  \
   if (!(b))                                                                    \
     test_fail_eq(state, #b, "true");
@@ -101,12 +111,12 @@ struct test_state {
   struct vec_test_action actions;
   uint8_t  current_failed : 1;
   uint8_t in_test : 1;
+  // used in the implementation of the for loop that
+  // test_group uses
+  uint8_t should_exit_group : 1;
   struct vec_string strs;
   const char *filter_str;
 };
-
-#define test_start(state, desc)                                              \
-  for (test_start_internal(state, __test_name); state->in_test; test_end_internal(state)) \
 
 struct test_state test_state_new(struct test_config config);
 void test_state_finalize(struct test_state *state);
@@ -123,3 +133,5 @@ void print_failures(struct test_state *state);
 
 void write_test_results(struct test_state *state);
 bool test_matches(struct test_state *state, char *test_name);
+
+bool test_group_should_continue(struct test_state *restrict state);

@@ -120,6 +120,7 @@ void test_group_start(struct test_state *state, char *name) {
   print_depth_indent(state);
   printf("%s\n", name);
   vec_string_push(&state->path, name);
+  state->should_exit_group = false;
   if (state->config.junit) {
     vec_test_action_push(&state->actions, GROUP_ENTER);
     vec_string_push(&state->strs, name);
@@ -129,6 +130,7 @@ void test_group_start(struct test_state *state, char *name) {
 void test_group_end(struct test_state *state) {
   assert(!state->in_test);
   state->path.length--;
+  state->should_exit_group = true;
   if (state->config.junit) {
     vec_test_action_push(&state->actions, GROUP_LEAVE);
   }
@@ -411,4 +413,12 @@ bool test_matches(struct test_state *restrict state,
   bool res = strstr(path_string, state->filter_str) != NULL;
   free(path_string);
   return res;
+}
+
+bool test_group_should_continue(struct test_state *restrict state) {
+  bool res = state->should_exit_group;
+  if (res) {
+    state->should_exit_group = false;
+  }
+  return !res;
 }

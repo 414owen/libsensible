@@ -12,6 +12,7 @@
           pkgs.stdenv
           pkgs.clang-tools
           pkgs.clang-tools.clang
+          pkgs.cmake
         ];
       };
     });
