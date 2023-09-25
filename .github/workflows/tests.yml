@@ -25,7 +25,9 @@ jobs:
     - uses: webiny/action-conventional-commits@v1.1.0
     - uses: actions/checkout@v2
     # - run: ./scripts/checks/headers-have-pragmas.sh
-    - run: ./scripts/licences.sh check
+    # - run: ./scripts/licences.sh check
+    - name: REUSE Compliance Check
+      uses: fsfe/reuse-action@v2
   Tests:
     runs-on: ubuntu-latest
     steps:
