@@ -84,6 +84,7 @@ void assert_tags_match(struct sentest_state *state, char *xml, char *tag_name) {
   if (starts != ends) {
     sentest_failf(state, "Different number of start and end tags for tag %s: %d vs %d", tag_name, starts, ends);
   }
+  free(start_tag_str);
 }
 
 int main(void) {

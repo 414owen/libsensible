@@ -66,17 +66,6 @@ struct sentest_vec_string {
   size_t capacity;
 };
 
-struct sentest_failure {
-  char *path;
-  char *reason;
-};
-
-struct sentest_vec_failure {
-  struct sentest_failure *data;
-  size_t length;
-  size_t capacity;
-};
-
 struct sentest_vec_char {
   char *data;
   size_t length;
@@ -105,14 +94,14 @@ struct sentest_state {
   clock_t end_time;
   // TODO name this better
   char *current_name;
-  struct sentest_vec_failure failures;
   struct sentest_vec_test_action actions;
   uint8_t  current_failed : 1;
   uint8_t in_test : 1;
   // used in the implementation of the for loop that
   // test_group uses
   uint8_t should_exit_group : 1;
-  struct sentest_vec_string strs;
+  struct sentest_vec_char strs;
+  struct sentest_vec_size_t str_starts;
   const char *filter_str;
 };
 
@@ -196,25 +185,6 @@ void sentest_vec_test_action_push(struct sentest_vec_test_action *vec, enum sent
 }
 
 static
-struct sentest_vec_failure sentest_vec_failure_new(void) {
-  struct sentest_vec_failure res = {
-    .data = malloc(sizeof(struct sentest_failure) * VEC_INITIAL_CAPACITY),
-    .length = 0,
-    .capacity = VEC_INITIAL_CAPACITY,
-  };
-  return res;
-}
-
-static
-void sentest_vec_failure_push(struct sentest_vec_failure *vec, struct sentest_failure failure) {
-  if (vec->length == vec->capacity) {
-    vec->capacity += vec->capacity >> 1;
-    vec->data = realloc(vec->data, sizeof(struct sentest_failure) * vec->capacity);
-  }
-  vec->data[vec->length++] = failure;
-}
-
-static
 struct sentest_vec_char sentest_vec_char_new(void) {
   struct sentest_vec_char res = {
     .data = malloc(VEC_INITIAL_CAPACITY),
@@ -225,6 +195,7 @@ struct sentest_vec_char sentest_vec_char_new(void) {
   return res;
 }
 
+// Create a path by composing existing path with a new segment
 static
 void sentest_vec_char_push_pathseg(struct sentest_vec_char *vec, const char *str, size_t len) {
   if (vec->length + len + 1 >= vec->capacity) {
@@ -235,6 +206,17 @@ void sentest_vec_char_push_pathseg(struct sentest_vec_char *vec, const char *str
   vec->data[vec->length - 1] = '/';
   strcpy(&vec->data[vec->length], str);
   vec->length += 1 + len;
+}
+
+// Push a string into a buffer of strings
+static
+void sentest_vec_char_push_string(struct sentest_vec_char *vec, const char *str, size_t length) {
+  if (vec->length + length >= vec->capacity) {
+    vec->capacity = MAX(vec->capacity + (vec->capacity >> 1), vec->length + length + 1);
+    vec->data = realloc(vec->data, vec->capacity);
+  }
+  strcpy(&vec->data[vec->length], str);
+  vec->length += 1 + length;
 }
 
 static
@@ -250,10 +232,15 @@ void sentest_print_depth_indent(struct sentest_state *state) {
 }
 
 static
-void sentest_push_path(struct sentest_state *state, const char *segment) {
-  size_t length = strlen(segment);
+void sentest_push_path(struct sentest_state *state, const char *segment, size_t length) {
   sentest_vec_char_push_pathseg(&state->path, segment, length);
   sentest_vec_size_t_push(&state->path_seg_lengths, length);
+}
+
+static
+void sentest_push_string(struct sentest_state *state, const char *str, size_t length) {
+  sentest_vec_size_t_push(&state->str_starts, state->strs.length);
+  sentest_vec_char_push_string(&state->strs, str, length);
 }
 
 static
@@ -267,58 +254,51 @@ void sentest_pop_path(struct sentest_state *state) {
 void sentest_group_start(struct sentest_state *state, char *name) {
   assert(!state->in_test);
   sentest_print_depth_indent(state);
-  fprintf(state->config.output, "%s\n", name);
+  size_t length = fprintf(state->config.output, "%s\n", name) - 1;
   fflush(state->config.output);
-  sentest_push_path(state, name);
+  sentest_push_path(state, name, length);
   state->should_exit_group = false;
-  if (state->config.junit_output_path) {
-    sentest_vec_test_action_push(&state->actions, GROUP_ENTER);
-    sentest_vec_string_push(&state->strs, name);
-  }
+  sentest_vec_test_action_push(&state->actions, GROUP_ENTER);
+  sentest_push_string(state, name, length);
 }
 
 void sentest_group_end(struct sentest_state *state) {
   assert(!state->in_test);
   sentest_pop_path(state);
   state->should_exit_group = true;
-  if (state->config.junit_output_path) {
-    sentest_vec_test_action_push(&state->actions, GROUP_LEAVE);
-  }
+  sentest_vec_test_action_push(&state->actions, GROUP_LEAVE);
 }
 
 // Static to avoid someone failing with a non-alloced string
 static
-void sentest_fail_with(struct sentest_state *state, char *reason) {
+void sentest_fail_with(struct sentest_state *state, char *reason, size_t length) {
   assert(state->in_test);
   state->current_failed = true;
-  struct sentest_failure f = {
-    .path = malloc(state->path.length),
-    .reason = reason
-  };
-  memcpy(f.path, state->path.data, state->path.length);
-  sentest_vec_failure_push(&state->failures, f);
-  if (state->config.junit_output_path) {
-    sentest_vec_test_action_push(&state->actions, TEST_FAIL);
-  }
+  sentest_push_string(state, reason, length);
+  sentest_vec_test_action_push(&state->actions, TEST_FAIL);
 }
 
 static
 void sentest_vfailf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, va_list ap) {
   const char *fmt1 = "In %s line %zu: ";
-  int size = snprintf(NULL, 0, fmt1, file, line);
+  size_t size = snprintf(NULL, 0, fmt1, file, line);
   {
     va_list ap1;
     va_copy(ap1, ap);
     size += vsnprintf(NULL, 0, fmt, ap1);
   }
-  char *buf = malloc(size + 1);
+#define MAX_STACK_BUF 256
+  char stack_buf[MAX_STACK_BUF];
+  char *buf = size + 1 > MAX_STACK_BUF ? malloc(size + 1) : stack_buf;
   {
     char *pos = buf;
     pos += sprintf(buf, fmt1, file, line);
     pos += vsprintf(pos, fmt, ap);
     *pos = '\0';
   }
-  sentest_fail_with(state, buf);
+  sentest_fail_with(state, buf, size);
+  if (size + 1 > MAX_STACK_BUF) free(buf);
+
 }
 
 void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...) {
@@ -352,19 +332,17 @@ bool sentest_assert_neq_internal(struct sentest_state *state, bool is_equal, con
 void sentest_start_internal(struct sentest_state *state, char *name) {
   assert(!state->in_test);
   assert(sentest_depth(state) > 0);
-  sentest_push_path(state, name);
-  state->in_test = true;
   sentest_print_depth_indent(state);
-  fprintf(state->config.output, "%s ", name);
+  size_t length = fprintf(state->config.output, "%s ", name) - 1;
+  sentest_push_path(state, name, length);
+  state->in_test = true;
   // we want to know what test is being run when we crash
   fflush(state->config.output);
   state->current_name = name;
   state->current_failed = false;
   state->in_test = true;
-  if (state->config.junit_output_path) {
-    sentest_vec_test_action_push(&state->actions, TEST_ENTER);
-    sentest_vec_string_push(&state->strs, name);
-  }
+  sentest_vec_test_action_push(&state->actions, TEST_ENTER);
+  sentest_push_string(state, name, length);
 }
 
 static
@@ -382,9 +360,7 @@ void sentest_end_internal(struct sentest_state *state) {
   sentest_pop_path(state);
   state->tests_run++;
   state->in_test = false;
-  if (state->config.junit_output_path) {
-    sentest_vec_test_action_push(&state->actions, TEST_LEAVE);
-  }
+  sentest_vec_test_action_push(&state->actions, TEST_LEAVE);
 }
 
 struct sentest_state *sentest_start(struct sentest_config config) {
@@ -398,11 +374,11 @@ struct sentest_state *sentest_start(struct sentest_config config) {
     .start_time = clock(),
     .end_time = 0,
     .current_name = NULL,
-    .failures = sentest_vec_failure_new(),
     .actions = sentest_vec_test_action_new(),
     .current_failed = false,
     .in_test = false,
-    .strs = sentest_vec_string_new(),
+    .strs = sentest_vec_char_new(),
+    .str_starts = sentest_vec_size_t_new(),
     .filter_str = config.filter_str,
   };
   if (state.config.output == NULL) {
@@ -413,66 +389,108 @@ struct sentest_state *sentest_start(struct sentest_config config) {
 }
 
 static
-void sentest_print_failure(struct sentest_state *state, struct sentest_failure f) {
-  fprintf(state->config.output,
-    "\n%sFAILED%s: ",
-    sentest_color(state, TERM_RED),
-    sentest_color(state, TERM_RESET));
-  fputs(f.path, state->config.output);
-  putc('\n', state->config.output);
-  fputs(f.reason, state->config.output);
-  putc('\n', state->config.output);
-  fflush(state->config.output);
-}
-
-static
-void sentest_print_failures(struct sentest_state *state) {
-  for (size_t i = 0; i < state->failures.length; i++) {
-    sentest_print_failure(state, state->failures.data[i]);
+bool sentest_print_failures(struct sentest_state *state) {
+  bool had_failure = false;
+  size_t str_ind = 0;
+  for (size_t i = 0; i < state->actions.length; i++) {
+    enum sentest_action action = state->actions.data[i];
+    switch (action) {
+      case TEST_LEAVE:
+      case GROUP_LEAVE:
+        sentest_pop_path(state);
+        break;
+      case GROUP_ENTER:
+      case TEST_ENTER: {
+        char *segment = &state->strs.data[state->str_starts.data[str_ind++]];
+        sentest_push_path(state, segment, strlen(segment));
+        break;
+      }
+      case TEST_FAIL: {
+        had_failure = true;
+        char *reason = &state->strs.data[state->str_starts.data[str_ind++]];
+        fprintf(state->config.output,
+          "\n%sFAILED%s: ",
+          sentest_color(state, TERM_RED),
+          sentest_color(state, TERM_RESET));
+        fputs(state->path.data, state->config.output);
+        putc('\n', state->config.output);
+        fputs(reason, state->config.output);
+        putc('\n', state->config.output);
+        fflush(state->config.output);
+        break;
+      }
+    }
   }
+  return had_failure;
 }
 
 void sentest_write_results(struct sentest_state *state) {
   if (!state->config.junit_output_path) { return; }
   FILE *f = fopen(state->config.junit_output_path, "w");
 
-  bool failed = false;
-  struct sentest_vec_test_aggregates agg_stack = sentest_vec_test_aggregate_new();
-  struct sentest_vec_test_aggregates aggs = sentest_vec_test_aggregate_new();
-  struct sentest_aggregate current = {.tests = 0, .failures = 0};
-
-  for (size_t i = 0; i < state->actions.length; i++) {
-    enum sentest_action action = state->actions.data[state->actions.length - 1 - i];
-    switch (action) {
-      case GROUP_LEAVE:
-        sentest_vec_test_aggregate_push(&agg_stack, current);
-        current.tests = 0;
-        current.failures = 0;
-        break;
-      case GROUP_ENTER: {
-        struct sentest_aggregate inner;
-        inner = agg_stack.data[--agg_stack.length];
-        sentest_vec_test_aggregate_push(&aggs, current);
-        current.tests += inner.tests;
-        current.failures += inner.failures;
-        break;
+  size_t max_depth = 0;
+  size_t num_groups = 0;
+  {
+    size_t depth = 0;
+    for (size_t i = 0; i < state->actions.length; i++) {
+      enum sentest_action action = state->actions.data[i];
+      switch (action) {
+        case GROUP_LEAVE:
+          max_depth = MAX(max_depth, depth);
+          depth--;
+          break;
+        case GROUP_ENTER:
+          num_groups++;
+          depth++;
+          break;
+        default:
+          break;
       }
-      case TEST_LEAVE:
-        current.tests++;
-        failed = false;
-        break;
-      case TEST_FAIL:
-        failed = true;
-        break;
-      case TEST_ENTER:
-        if (failed)
-          current.failures++;
-        failed = false;
-        break;
     }
   }
 
-  free(agg_stack.data);
+  // Traverse actions in reverse, calculating aggregates
+  struct sentest_aggregate *aggs = malloc(sizeof(struct sentest_aggregate) * num_groups);
+  struct sentest_aggregate current = {.tests = 0, .failures = 0};
+  {
+    struct sentest_aggregate *agg_stack = malloc(sizeof(struct sentest_aggregate) * max_depth);
+    size_t agg_stack_ind = 0;
+    size_t aggs_ind = 0;
+    bool failed = false;
+
+    for (size_t i = 0; i < state->actions.length; i++) {
+      enum sentest_action action = state->actions.data[state->actions.length - 1 - i];
+      switch (action) {
+        case GROUP_LEAVE:
+          agg_stack[agg_stack_ind++] = current;
+          current.tests = 0;
+          current.failures = 0;
+          break;
+        case GROUP_ENTER: {
+          struct sentest_aggregate inner;
+          inner = agg_stack[--agg_stack_ind];
+          aggs[aggs_ind++] = current;
+          current.tests += inner.tests;
+          current.failures += inner.failures;
+          break;
+        }
+        case TEST_LEAVE:
+          current.tests++;
+          failed = false;
+          break;
+        case TEST_FAIL:
+          failed = true;
+          break;
+        case TEST_ENTER:
+          if (failed)
+            current.failures++;
+          failed = false;
+          break;
+      }
+    }
+    free(agg_stack);
+  }
+
   struct sentest_vec_string class_path = sentest_vec_string_new();
 
   clock_t elapsed = state->end_time - state->start_time;
@@ -486,33 +504,30 @@ void sentest_write_results(struct sentest_state *state) {
           // TODO fix this
           elapsed);
 
-  size_t agg_ind = aggs.length - 1;
+  size_t agg_ind = num_groups - 1;
   size_t str_ind = 0;
   size_t fail_ind = 0;
   size_t depth = 1;
+  char *all_depths = malloc((1 + max_depth) * TEST_INDENT + 1);
+  for (size_t i = 0; i < (1 + max_depth) * TEST_INDENT; i++) {
+    all_depths[i] = ' ';
+  }
+  all_depths[(1 + max_depth) * TEST_INDENT] = '\0';
 
   for (size_t i = 0; i < state->actions.length; i++) {
     enum sentest_action action = state->actions.data[i];
-    switch (action) {
-      case GROUP_LEAVE:
+    if (action == GROUP_LEAVE) {
         // TODO investigate: do we need depth?
         depth--;
         class_path.length--;
-        break;
-      default:
-        break;
     }
 
-    for (size_t j = 0; j < depth; j++) {
-      fputs("  ", f);
-    }
+    fwrite(all_depths, 1, TEST_INDENT * depth, f);
 
     switch (action) {
       case GROUP_ENTER: {
-        struct sentest_aggregate agg = aggs.data[agg_ind];
-        agg_ind--;
-        char *str = state->strs.data[str_ind];
-        str_ind++;
+        struct sentest_aggregate agg = aggs[agg_ind--];
+        char *str = &state->strs.data[state->str_starts.data[str_ind++]];
         fprintf(f,
                 "<testsuite name=\"%s\" tests=\"%zu\" failures=\"%zu\">\n",
                 str,
@@ -525,8 +540,7 @@ void sentest_write_results(struct sentest_state *state) {
       case TEST_ENTER:
         fprintf(f,
                 "<testcase name=\"%s\" classname=\"",
-                state->strs.data[str_ind]);
-        str_ind++;
+                &state->strs.data[state->str_starts.data[str_ind++]]);
         for (size_t i = 0; i < class_path.length; i++) {
           if (i > 0)
             putc('/', f);
@@ -543,7 +557,7 @@ void sentest_write_results(struct sentest_state *state) {
       case TEST_FAIL:
         fprintf(f,
                 "<failure message=\"Assertion failure\">%s</failure>\n",
-                state->failures.data[fail_ind].reason);
+                &state->strs.data[state->str_starts.data[str_ind++]]);
         fail_ind--;
         break;
     }
@@ -551,7 +565,7 @@ void sentest_write_results(struct sentest_state *state) {
   fputs("</testsuites>\n", f);
 
   fclose(f);
-  free(aggs.data);
+  free(aggs);
   free(class_path.data);
 }
 
@@ -580,9 +594,14 @@ bool sentest_group_should_continue(struct sentest_state *restrict state) {
 
 int sentest_finish(struct sentest_state *state) {
   state->end_time = clock();
-  sentest_print_failures(state);
+  bool had_failure = sentest_print_failures(state);
   sentest_write_results(state);
-  int res = state->failures.length > 0 ? 1 : 0;
+  free(state->actions.data);
+  free(state->path.data);
+  free(state->path_seg_lengths.data);
+  free(state->strs.data);
+  free(state->str_starts.data);
+  int res = had_failure > 0 ? 1 : 0;
   fflush(state->config.output);
   free(state);
   return res;

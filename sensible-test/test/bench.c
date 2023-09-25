@@ -48,7 +48,7 @@ int main(void) {
     .output = fopen(DEVNULL, "w"),
     .color = true,
     .filter_str = NULL,
-    .junit_output_path = NULL,
+    .junit_output_path = DEVNULL,
   };
   int n = 10000000;
 
