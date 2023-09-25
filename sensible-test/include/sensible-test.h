@@ -5,9 +5,12 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdio.h>
 
 struct sentest_config {
-  bool junit;
+  unsigned char junit : 1;
+  unsigned char color : 1;
+  FILE *output;
   char *filter_str;
 };
 

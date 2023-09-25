@@ -182,14 +182,14 @@ void sentest_vec_failure_push(struct sentest_vec_failure *vec, struct sentest_fa
 static
 void sentest_print_depth_indent(struct sentest_state *state) {
   for (uint32_t i = 0; i < state->path.length * TEST_INDENT; i++) {
-    putc(' ', stdout);
+    putc(' ', state->config.output);
   }
 }
 
 void sentest_group_start(struct sentest_state *state, char *name) {
   assert(!state->in_test);
   sentest_print_depth_indent(state);
-  printf("%s\n", name);
+  fprintf(state->config.output, "%s\n", name);
   sentest_vec_string_push(&state->path, name);
   state->should_exit_group = false;
   if (state->config.junit) {
@@ -247,10 +247,10 @@ void sentest_start_internal(struct sentest_state *state, char *name) {
   assert(state->path.length > 0);
   state->in_test = true;
   sentest_print_depth_indent(state);
-  fputs(name, stdout);
-  putc(' ', stdout);
+  fputs(name, state->config.output);
+  putc(' ', state->config.output);
   // we want to know what test is being run when we crash
-  fflush(stdout);
+  fflush(state->config.output);
   state->current_name = name;
   state->current_failed = false;
   state->in_test = true;
@@ -260,8 +260,16 @@ void sentest_start_internal(struct sentest_state *state, char *name) {
   }
 }
 
+static
+const char *sentest_color(struct sentest_state *state, char *color) {
+  return state->config.color ? color : "";
+}
+
 void sentest_end_internal(struct sentest_state *state) {
-  printf("%s" TERM_RESET "\n", state->current_failed ? TERM_RED "✕" : TERM_GREEN "✓");
+  fprintf(state->config.output, "%s%s%s\n",
+    sentest_color(state, state->current_failed ? TERM_RED : TERM_GREEN),
+    state->current_failed ? "✕" : "✓",
+    sentest_color(state, TERM_RESET));
   if (!state->current_failed)
     state->tests_passed++;
   state->tests_run++;
@@ -288,6 +296,9 @@ struct sentest_state *sentest_start(struct sentest_config config) {
     .strs = sentest_vec_string_new(),
     .filter_str = config.filter_str,
   };
+  if (state.config.output == NULL) {
+    state.config.output = stdout;
+  }
   *res = state;
   return res;
 }
@@ -333,17 +344,20 @@ char *sentest_print_test_path_string(struct sentest_vec_string v) {
 }
 
 static
-void sentest_print_failure(struct sentest_failure f) {
-  fputs("\n" TERM_RED "FAILED" TERM_RESET ": ", stdout);
-  sentest_print_test_path(f.path, stdout);
-  putc('\n', stdout);
+void sentest_print_failure(struct sentest_state *state, struct sentest_failure f) {
+  fprintf(state->config.output,
+    "\n%sFAILED%s: ",
+    sentest_color(state, TERM_RED),
+    sentest_color(state, TERM_RESET));
+  sentest_print_test_path(f.path, state->config.output);
+  putc('\n', state->config.output);
   puts(f.reason);
 }
 
 static
 void sentest_print_failures(struct sentest_state *state) {
   for (size_t i = 0; i < state->failures.length; i++) {
-    sentest_print_failure(state->failures.data[i]);
+    sentest_print_failure(state, state->failures.data[i]);
   }
 }
 
@@ -394,7 +408,7 @@ void sentest_write_results(struct sentest_state *state) {
 
   fprintf(f,
           "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-          "<testsuites name=\"Unit tests\" tests=\"%zu\" disabled=\"0\" "
+          "<testsuites name=\"libsensible tests\" tests=\"%zu\" disabled=\"0\" "
           "errors=\"0\" failures=\"%zu\" time=\"%ld\">\n",
           current.tests,
           current.failures,
