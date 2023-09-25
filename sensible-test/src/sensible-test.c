@@ -1,3 +1,7 @@
+// Copyright (c) 2023 The libsensible Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 #include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -494,3 +498,5 @@ bool sentest_group_should_continue(struct sentest_state *restrict state) {
   }
   return !res;
 }
+
+
