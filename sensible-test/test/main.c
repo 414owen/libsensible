@@ -8,6 +8,7 @@
 
 #include "sensible-test.h"
 
+// This is the test suite we're testing the output of.
 int run_example_suite(bool has_failure, const char *out_path, const char *junit_out_path) {
   struct sentest_config config = {
     .output = fopen(out_path, "w"),
@@ -46,13 +47,16 @@ static
 char *read_entire_file(struct sentest_state *state, const char *path) {
   FILE *f = fopen(path, "rb");
   int seek_res = fseek(f, 0, SEEK_END);
-  sentest_assert_eq(state, seek_res, 0);
+  if (sentest_assert_eq(state, seek_res, 0)) return NULL;
   long fsize = ftell(f);
+  if (sentest_assert_neq(state, fsize, -1)) return NULL;
   rewind(f);
   char *string = malloc(fsize + 1);
+  if (sentest_assert_neq(state, string, NULL)) return NULL;
   size_t read_amt = fread(string, 1, fsize, f);
-  sentest_assert_eq(state, (long) read_amt, fsize);
-  fclose(f);
+  if (sentest_assert_eq(state, (long) read_amt, fsize)) return NULL;
+  int close_res = fclose(f);
+  if (sentest_assert_eq(state, close_res, 0)) return NULL;
   string[fsize] = 0;
   return string;
 }
@@ -87,13 +91,13 @@ int main(void) {
     .output = stdout,
     .color = true,
     .filter_str = NULL,
-    .junit_output_path = "test_results.xml",
+    .junit_output_path = "test-results.xml",
   };
   struct sentest_state *state = sentest_start(config);
 
   sentest_group(state, "suite which passes") {
-    const char *output_path = "out";
-    const char *junit_out_path = "junit-example.xml";
+    const char *output_path = "pass-suite.out";
+    const char *junit_out_path = "pass-junit.xml";
     run_example_suite(false, output_path, junit_out_path);
     sentest_group(state, "output") {
       char *output = NULL;
@@ -101,7 +105,7 @@ int main(void) {
         output = read_entire_file(state, output_path);
       }
       if (output == NULL) break;
-      sentest(state, "printf ticks for passes") {
+      sentest(state, "prints ticks for passes") {
         sentest_assert_eq(state, count_substrings(output, "✓"), 3);
       }
       sentest(state, "doesn't print any crosses") {
@@ -127,6 +131,45 @@ int main(void) {
       }
       free(output);
     }
+    remove(junit_out_path);
   }
-  exit(sentest_finish(state));
+
+  sentest_group(state, "suite which fails") {
+    const char *output_path = "fail-suite.stdout";
+    const char *junit_out_path = "fail-junit.xml";
+    run_example_suite(true, output_path, junit_out_path);
+    sentest_group(state, "output") {
+      char *output = NULL;
+      sentest(state, "writes the output file") {
+        output = read_entire_file(state, output_path);
+      }
+      if (output == NULL) break;
+      sentest(state, "prints ticks for passes") {
+        sentest_assert_eq(state, count_substrings(output, "✓"), 2);
+      }
+      sentest(state, "prints crosses for failures") {
+        sentest_assert_eq(state, count_substrings(output, "✕"), 1);
+      }
+      free(output);
+    }
+    sentest_group(state, "junit output") {
+      char *output = NULL;
+      sentest(state, "writes the output file") {
+        output = read_entire_file(state, junit_out_path);
+      }
+      if (output == NULL) break;
+      sentest(state, "contains balances <testsuites>") {
+        assert_tags_match(state, output, "testsuites");
+      }
+      sentest(state, "contains balances <testsuite>s") {
+        assert_tags_match(state, output, "testsuite");
+      }
+      sentest(state, "contains balances <testcase>s") {
+        assert_tags_match(state, output, "testcase");
+      }
+      free(output);
+    }
+    remove(junit_out_path);
+  }
+  return sentest_finish(state);
 }
