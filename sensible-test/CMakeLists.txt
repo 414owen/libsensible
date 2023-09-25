@@ -20,7 +20,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION_MAJ
 set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER include/sensible-test.h)
 
 
-
 # Test suite
 
+enable_testing()
 add_subdirectory(test EXCLUDE_FROM_ALL)
