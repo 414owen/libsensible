@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2023 The libsensible Authors
+
+SPDX-License-Identifier: Unlicense
+-->
+
 # libsensible
 
 A collection of C libraries for writing sensible, threadsafe, fast code.

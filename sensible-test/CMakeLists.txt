@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2023 The libsensible Authors
+#
+# SPDX-License-Identifier: Unlicense
+
 cmake_minimum_required(VERSION 3.9)
 project(sensible-test
   VERSION 1.0.0

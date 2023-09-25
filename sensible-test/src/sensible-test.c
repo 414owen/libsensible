@@ -1,6 +1,6 @@
-// Copyright (c) 2023 The libsensible Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+// SPDX-FileCopyrightText: 2023 The libsensible Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
 #include <assert.h>
 #include <stdarg.h>
