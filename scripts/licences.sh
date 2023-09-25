@@ -11,20 +11,25 @@ LICENCE="// Copyright (c) 2023 The libsensible Authors All rights reserved.
 LINES=$(wc -l <(echo "$LICENCE"))
 
 function check() {
+  failed="false"
   first_block="true"
   for file in $("$script_path"/source_files.sh); do
+    echo -n "$file"
     if ! cmp --silent <(head -n 3 < "$file") <(echo "$LICENCE") > /dev/null; then
-      if [ "$first_block" != "true" ]; then
-        echo ""
-        echo ""
-      fi
-      echo "${file} doesn't contain the desired licence."
-      echo "Please insert this at the top:"
+      failed="true"
+      echo " - FAILED"
+    else
       echo ""
-      echo "${LICENCE}"
-      first_block=false
     fi
   done
+
+  if [ "$failed" == "true" ]; then
+    echo ""
+    echo "Some files were missing the license header."
+    echo "Please insert this at the top:"
+    echo ""
+    echo "${LICENCE}"
+  fi
 }
 
 function print_usage() {
