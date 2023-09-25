@@ -101,7 +101,7 @@ struct sentest_state {
 };
 
 
-static const uint32_t TEST_INDENT = 2;
+static const uint8_t TEST_INDENT = 2;
 
 static
 struct sentest_vec_string sentest_vec_string_new(void) {
@@ -181,7 +181,7 @@ void sentest_vec_failure_push(struct sentest_vec_failure *vec, struct sentest_fa
 
 static
 void sentest_print_depth_indent(struct sentest_state *state) {
-  for (uint32_t i = 0; i < state->path.length * TEST_INDENT; i++) {
+  for (uint8_t i = 0; i < state->path.length * TEST_INDENT; i++) {
     putc(' ', state->config.output);
   }
 }
@@ -192,7 +192,7 @@ void sentest_group_start(struct sentest_state *state, char *name) {
   fprintf(state->config.output, "%s\n", name);
   sentest_vec_string_push(&state->path, name);
   state->should_exit_group = false;
-  if (state->config.junit) {
+  if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, GROUP_ENTER);
     sentest_vec_string_push(&state->strs, name);
   }
@@ -202,7 +202,7 @@ void sentest_group_end(struct sentest_state *state) {
   assert(!state->in_test);
   state->path.length--;
   state->should_exit_group = true;
-  if (state->config.junit) {
+  if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, GROUP_LEAVE);
   }
 }
@@ -233,9 +233,24 @@ void sentest_fail_with(struct sentest_state *state, char *reason) {
   }
   f.path.data[path_part_amount - 1] = state->current_name;
   sentest_vec_failure_push(&state->failures, f);
-  if (state->config.junit) {
+  if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, TEST_FAIL);
   }
+}
+
+void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...) {
+  const char *fmt1 = "In %s line %zu: ";
+  int size = snprintf(NULL, 0, fmt1, file, line);
+  va_list ap;
+  va_start(ap, fmt);
+  size += snprintf(NULL, 0, fmt, ap);
+  char *buf = malloc(size + 1);
+  char *pos = buf;
+  pos += sprintf(buf, fmt1, file, line);
+  pos += vsprintf(pos, fmt, ap);
+  *pos = '\0';
+  va_end(ap);
+  sentest_fail_with(state, buf);
 }
 
 void sentest_fail_eq(struct sentest_state *state, char *a, char *b) {
@@ -254,7 +269,7 @@ void sentest_start_internal(struct sentest_state *state, char *name) {
   state->current_name = name;
   state->current_failed = false;
   state->in_test = true;
-  if (state->config.junit) {
+  if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, TEST_ENTER);
     sentest_vec_string_push(&state->strs, name);
   }
@@ -274,7 +289,7 @@ void sentest_end_internal(struct sentest_state *state) {
     state->tests_passed++;
   state->tests_run++;
   state->in_test = false;
-  if (state->config.junit) {
+  if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, TEST_LEAVE);
   }
 }
@@ -362,8 +377,8 @@ void sentest_print_failures(struct sentest_state *state) {
 }
 
 void sentest_write_results(struct sentest_state *state) {
-  if (!state->config.junit) { return; }
-  FILE *f = fopen("test-results.xml", "w");
+  if (!state->config.junit_output_path) { return; }
+  FILE *f = fopen(state->config.junit_output_path, "w");
 
   bool failed = false;
   struct sentest_vec_test_aggregates agg_stack = sentest_vec_test_aggregate_new();

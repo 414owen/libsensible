@@ -8,10 +8,14 @@
 #include <stdio.h>
 
 struct sentest_config {
-  unsigned char junit : 1;
+  // Enable color output
   unsigned char color : 1;
+  // Output file (usually stdout)
   FILE *output;
-  char *filter_str;
+  // Only run tests with paths that contain this string
+  const char *filter_str;
+  // NULL for no junit xml output
+  const char *junit_output_path;
 };
 
 #define sentest(state, desc)                                                   \
@@ -37,7 +41,7 @@ struct sentest_config {
   if ((a) == (b))                                                              \
     sentest_fail_eq(state, #a, #b);
 
-#define sentest_failf(state, fmt, ...) failf_(state, "In %s on line %zu: " fmt, __FILE__, __LINE__, __VA_ARGS__)
+#define sentest_failf(state, fmt, ...) sentest_failf_internal(state, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
 struct sentest_state;
 
@@ -57,3 +61,4 @@ bool sentest_group_should_continue(struct sentest_state *state);
 bool sentest_test_should_continue(struct sentest_state *state);
 
 int sentest_finish(struct sentest_state *state);
+void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...);

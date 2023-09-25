@@ -8,12 +8,12 @@
 
 #include "sensible-test.h"
 
-int run_example_suite(bool has_failure, const char *out_path) {
+int run_example_suite(bool has_failure, const char *out_path, const char *junit_out_path) {
   struct sentest_config config = {
     .output = fopen(out_path, "w"),
     .color = false,
     .filter_str = NULL,
-    .junit = true,
+    .junit_output_path = junit_out_path,
   };
   struct sentest_state *state = sentest_start(config);
   sentest_group(state, "test-suite") {
@@ -68,18 +68,33 @@ int count_substrings(char *a, char *b) {
   return res;
 }
 
+// Known caveat: Also matches strings that have 'tag_name' as a prefix
+static
+void assert_tags_match(struct sentest_state *state, char *xml, char *tag_name) {
+  size_t len = strlen(tag_name);
+  char *start_tag_str = malloc(len * 2 + 6);
+  char *end_tag_str = start_tag_str + sprintf(start_tag_str, "<%s", tag_name) + 1;
+  sprintf(end_tag_str, "</%s", tag_name);
+  int starts = count_substrings(xml, start_tag_str);
+  int ends = count_substrings(xml, end_tag_str);
+  if (starts != ends) {
+    sentest_failf(state, "Different number of start and end tags for tag %s: %d vs %d", tag_name, starts, ends);
+  }
+}
+
 int main(void) {
   struct sentest_config config = {
     .output = stdout,
     .color = true,
     .filter_str = NULL,
-    .junit = true,
+    .junit_output_path = "test_results.xml",
   };
   struct sentest_state *state = sentest_start(config);
 
   sentest_group(state, "suite which passes") {
     const char *output_path = "out";
-    run_example_suite(false, output_path);
+    const char *junit_out_path = "junit-example.xml";
+    run_example_suite(false, output_path, junit_out_path);
     sentest_group(state, "output") {
       char *output = NULL;
       sentest(state, "writes the output file") {
@@ -98,14 +113,17 @@ int main(void) {
     sentest_group(state, "junit output") {
       char *output = NULL;
       sentest(state, "writes the output file") {
-        output = read_entire_file(state, output_path);
+        output = read_entire_file(state, junit_out_path);
       }
       if (output == NULL) break;
-      sentest(state, "printf ticks for passes") {
-        sentest_assert_eq(state, count_substrings(output, "✓"), 3);
+      sentest(state, "contains balances <testsuites>") {
+        assert_tags_match(state, output, "testsuites");
       }
-      sentest(state, "doesn't print any crosses") {
-        sentest_assert_eq(state, count_substrings(output, "x"), 0);
+      sentest(state, "contains balances <testsuite>s") {
+        assert_tags_match(state, output, "testsuite");
+      }
+      sentest(state, "contains balances <testcase>s") {
+        assert_tags_match(state, output, "testcase");
       }
       free(output);
     }
