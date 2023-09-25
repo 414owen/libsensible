@@ -11,6 +11,19 @@ project(sensible-test
 
 set(CMAKE_C_STANDARD 99)
 
+# Adds a compile option if we're on GCC or Clang
+function(add_modern_compile_opt)
+  if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    add_compile_options(${ARGV})
+  endif()
+endfunction()
+
+add_modern_compile_opt(-pedantic -Wall -Wextra)
+
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_compile_options(-O0)
+  add_modern_compile_opt(-ggdb)
+endif()
 
 # Library
 
