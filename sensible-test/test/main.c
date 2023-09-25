@@ -1,23 +1,29 @@
+#include <stdbool.h>
+#include <stdlib.h>
+
 #include "sensible-test.h"
 
 int main(void) {
-  struct test_config config = {
-    .filter_str = "",
+  struct sentest_config config = {
+    .filter_str = NULL,
     .junit = true,
   };
-  struct test_state state = test_state_new(config);
-  test_group(&state, "group 1") {
-    test_group(&state, "group 2") {
-      test(&state, "one is one") {
-        test_assert_eq(&state, 1, 1);
+  struct sentest_state *state = sentest_start(config);
+  sentest_group(state, "test-suite") {
+    sentest_group(state, "trivial") {
+      sentest(state, "assert true") {
+        sentest_assert(state, true);
       }
     }
-    test_group(&state, "group 2") {
-      test(&state, "one is two") {
-        test_assert_eq(&state, 1, 1);
+    sentest_group(state, "equality") {
+      sentest(state, "one is two") {
+        sentest_assert_eq(state, 1, 2);
+      }
+      sentest(state, "two is two") {
+        sentest_assert_eq(state, 2, 2);
       }
     }
   }
-  test_state_finalize(&state);
-  print_failures(&state);
+  sentest_state_finalize(state);
+  sentest_print_failures(state);
 }

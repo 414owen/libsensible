@@ -22,5 +22,4 @@ set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER include/sensible-
 
 # Test suite
 
-enable_testing()
 add_subdirectory(test EXCLUDE_FROM_ALL)

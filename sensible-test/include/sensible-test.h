@@ -5,133 +5,54 @@
 #pragma once
 
 #include <stdbool.h>
-#include <stdint.h>
-#include <time.h>
 
-#define MERGE_(a,b) a##b
-#define LABEL_(a) MERGE_(unique_name_, a)
-#define UNIQUE_NAME LABEL_(__LINE__)
-
-#define test(state, desc)                                              \
-  for (test_start_internal(state, desc); (state)->in_test; test_end_internal(state))
-
-#define test_group(state, desc)                                              \
-  for (test_group_start(state, desc); test_group_should_continue(state); test_group_end(state))
-
-#define test_assert(state, b)                                                  \
-  if (!(b))                                                                    \
-    test_fail_eq(state, #b, "true");
-
-#define test_assert_eq(state, a, b)                                            \
-  if ((a) != (b))                                                              \
-    test_fail_eq(state, #a, #b);
-
-#define test_assert_eq_fmt(state, a, b, fmt)                                   \
-  if ((a) != (b)) {                                                            \
-    failf(state, #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b);  \
-  }
-
-#define test_assert_eq_fmt_f(state, a, b, fmt, transform)                      \
-  if ((a) != (b)) {                                                            \
-    failf(state,                                                               \
-          #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'",                \
-          (transform)(a),                                                      \
-          (transform)(b));                                                     \
-  }
-
-#define test_assert_eq_fmt_a(state, a, b, fmt, transform)                      \
-  if ((a) != (b)) {                                                            \
-    failf(state,                                                               \
-          #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'",                \
-          (transform)[a],                                                      \
-          (transform)[b]);                                                     \
-  }
-
-#define test_assert_neq(state, a, b)                                           \
-  if ((a) == (b))                                                              \
-    test_fail_eq(state, #a, #b);
-
-#define failf(state, fmt, ...) failf_(state, "In %s on line %zu: " fmt, __FILE__, __LINE__, __VA_ARGS__)
-
-struct test_config {
+struct sentest_config {
   bool junit;
   char *filter_str;
 };
 
-struct vec_string {
-  char **data;
-  size_t length;
-  size_t capacity;
-};
+#define sentest(state, desc)                                                   \
+  for (sentest_start_internal(state, desc); sentest_test_should_continue(state); sentest_end_internal(state))
 
-struct string_arr {
-  char **data;
-  size_t length;
-};
+#define sentest_group(state, desc)                                             \
+  for (sentest_group_start(state, desc); sentest_group_should_continue(state); sentest_group_end(state))
 
-struct failure {
-  struct string_arr path;
-  char *reason;
-};
+#define sentest_assert(state, b)                                               \
+  if (!(b))                                                                    \
+    sentest_fail_eq(state, #b, "true");
 
-struct vec_failure {
-  struct failure *data;
-  size_t length;
-  size_t capacity;
-};
+#define sentest_assert_eq(state, a, b)                                         \
+  if ((a) != (b))                                                              \
+    sentest_fail_eq(state, #a, #b);
 
-// TODO prefix these
-enum test_action {
-  GROUP_ENTER,
-  TEST_ENTER,
-  GROUP_LEAVE,
-  TEST_LEAVE,
-  TEST_FAIL,
-};
+#define sentest_assert_eq_fmt(state, a, b, fmt)                                \
+  if ((a) != (b)) {                                                            \
+    sentest_failf(state, #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b);  \
+  }
 
-struct vec_test_action {
-  enum test_action *data;
-  size_t length;
-  size_t capacity;
-};
+#define sentest_assert_neq(state, a, b)                                        \
+  if ((a) == (b))                                                              \
+    sentest_fail_eq(state, #a, #b);
 
-struct test_state {
-  // Settings
-  struct test_config config;
+#define sentest_failf(state, fmt, ...) failf_(state, "In %s on line %zu: " fmt, __FILE__, __LINE__, __VA_ARGS__)
 
-  // Current path, eg. "ints/can be added"
-  struct vec_string path;
-  uint32_t tests_passed;
-  uint32_t tests_run;
-  clock_t start_time;
-  clock_t end_time;
-  // TODO name this better
-  char *current_name;
-  struct vec_failure failures;
-  struct vec_test_action actions;
-  uint8_t  current_failed : 1;
-  uint8_t in_test : 1;
-  // used in the implementation of the for loop that
-  // test_group uses
-  uint8_t should_exit_group : 1;
-  struct vec_string strs;
-  const char *filter_str;
-};
+struct sentest_state;
 
-struct test_state test_state_new(struct test_config config);
-void test_state_finalize(struct test_state *state);
+struct sentest_state *sentest_start(struct sentest_config config);
 
-void test_group_end(struct test_state *state);
-void test_group_start(struct test_state *state, char *name);
+void sentest_group_end(struct sentest_state *state);
+void sentest_group_start(struct sentest_state *state, char *name);
 
-void test_end_internal(struct test_state *state);
-void test_start_internal(struct test_state *state, char *name);
+void sentest_end_internal(struct sentest_state *state);
+void sentest_start_internal(struct sentest_state *state, char *name);
 
-void test_fail_eq(struct test_state *state, char *a, char *b);
+void sentest_fail_eq(struct sentest_state *state, char *a, char *b);
 
-void print_failures(struct test_state *state);
+void sentest_write_results(struct sentest_state *state);
+bool sentest_matches(struct sentest_state *state, char *test_name);
 
-void write_test_results(struct test_state *state);
-bool test_matches(struct test_state *state, char *test_name);
+bool sentest_group_should_continue(struct sentest_state *restrict state);
+bool sentest_test_should_continue(struct sentest_state *restrict state);
 
-bool test_group_should_continue(struct test_state *restrict state);
+void sentest_print_failures(struct sentest_state *state);
+void sentest_state_finalize(struct sentest_state *state);
