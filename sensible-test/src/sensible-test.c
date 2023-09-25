@@ -128,25 +128,6 @@ void sentest_vec_string_push(struct sentest_vec_string *vec, char *string) {
 }
 
 static
-struct sentest_vec_test_aggregates sentest_vec_test_aggregate_new(void) {
-  struct sentest_vec_test_aggregates res = {
-    .data = malloc(sizeof(struct sentest_aggregate) * VEC_INITIAL_CAPACITY),
-    .length = 0,
-    .capacity = VEC_INITIAL_CAPACITY,
-  };
-  return res;
-}
-
-static
-void sentest_vec_test_aggregate_push(struct sentest_vec_test_aggregates *vec, const struct sentest_aggregate sentest_aggregate) {
-  if (vec->length == vec->capacity) {
-    vec->capacity += vec->capacity >> 1;
-    vec->data = realloc(vec->data, sizeof(struct sentest_aggregate) * vec->capacity);
-  }
-  vec->data[vec->length++] = sentest_aggregate;
-}
-
-static
 struct sentest_vec_size_t sentest_vec_size_t_new(void) {
   struct sentest_vec_size_t res = {
     .data = malloc(sizeof(size_t) * VEC_INITIAL_CAPACITY),
@@ -567,6 +548,7 @@ void sentest_write_results(struct sentest_state *state) {
   fclose(f);
   free(aggs);
   free(class_path.data);
+  free(all_depths);
 }
 
 static
