@@ -292,10 +292,6 @@ struct sentest_state *sentest_start(struct sentest_config config) {
   return res;
 }
 
-void sentest_state_finalize(struct sentest_state *state) {
-  state->end_time = clock();
-}
-
 static
 void sentest_print_test_path(struct sentest_string_arr v, FILE *out) {
   if (v.length == 0)
@@ -344,6 +340,7 @@ void sentest_print_failure(struct sentest_failure f) {
   puts(f.reason);
 }
 
+static
 void sentest_print_failures(struct sentest_state *state) {
   for (size_t i = 0; i < state->failures.length; i++) {
     sentest_print_failure(state->failures.data[i]);
@@ -351,6 +348,7 @@ void sentest_print_failures(struct sentest_state *state) {
 }
 
 void sentest_write_results(struct sentest_state *state) {
+  if (!state->config.junit) { return; }
   FILE *f = fopen("test-results.xml", "w");
 
   bool failed = false;
@@ -499,4 +497,11 @@ bool sentest_group_should_continue(struct sentest_state *restrict state) {
   return !res;
 }
 
-
+int sentest_finish(struct sentest_state *state) {
+  state->end_time = clock();
+  sentest_print_failures(state);
+  sentest_write_results(state);
+  int res = state->failures.length > 0 ? 1 : 0;
+  free(state);
+  return res;
+}

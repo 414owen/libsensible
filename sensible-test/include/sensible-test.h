@@ -48,11 +48,9 @@ void sentest_start_internal(struct sentest_state *state, char *name);
 
 void sentest_fail_eq(struct sentest_state *state, char *a, char *b);
 
-void sentest_write_results(struct sentest_state *state);
 bool sentest_matches(struct sentest_state *state, char *test_name);
 
-bool sentest_group_should_continue(struct sentest_state *restrict state);
-bool sentest_test_should_continue(struct sentest_state *restrict state);
+bool sentest_group_should_continue(struct sentest_state *state);
+bool sentest_test_should_continue(struct sentest_state *state);
 
-void sentest_print_failures(struct sentest_state *state);
-void sentest_state_finalize(struct sentest_state *state);
+int sentest_finish(struct sentest_state *state);

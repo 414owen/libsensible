@@ -28,6 +28,5 @@ int main(void) {
       }
     }
   }
-  sentest_state_finalize(state);
-  sentest_print_failures(state);
+  exit(sentest_finish(state));
 }
