@@ -22,7 +22,7 @@ add_modern_compile_opt(-pedantic -Wall -Wextra)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_compile_options(-O0)
-  add_modern_compile_opt(-ggdb)
+  add_modern_compile_opt(-gdwarf-4 -fno-omit-frame-pointer)
 endif()
 
 # Library

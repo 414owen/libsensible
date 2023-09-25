@@ -4,5 +4,10 @@
 
 .direnv
 .cache
+
+# What I call my build directories
 build
+debug
+release
+
 compile_commands.json

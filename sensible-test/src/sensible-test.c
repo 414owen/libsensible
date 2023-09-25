@@ -13,6 +13,8 @@
 
 #include "sensible-test.h"
 
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+
 // ANSI escape codes
 
 #define TERM_ESCAPE "\x1B"
@@ -31,13 +33,13 @@ enum sentest_action {
   TEST_FAIL,
 };
 
-struct test_aggregate {
+struct sentest_aggregate {
   size_t tests;
   size_t failures;
 };
 
 struct sentest_string_arr {
-  char **data;
+  char *data;
   size_t length;
 };
 
@@ -47,7 +49,7 @@ struct sentest_string_arr {
 #define VEC_INITIAL_CAPACITY 8
 
 struct sentest_vec_test_aggregates {
-  struct test_aggregate *data;
+  struct sentest_aggregate *data;
   size_t length;
   size_t capacity;
 };
@@ -65,12 +67,24 @@ struct sentest_vec_string {
 };
 
 struct sentest_failure {
-  struct sentest_string_arr path;
+  char *path;
   char *reason;
 };
 
 struct sentest_vec_failure {
   struct sentest_failure *data;
+  size_t length;
+  size_t capacity;
+};
+
+struct sentest_vec_char {
+  char *data;
+  size_t length;
+  size_t capacity;
+};
+
+struct sentest_vec_size_t {
+  size_t *data;
   size_t length;
   size_t capacity;
 };
@@ -82,7 +96,9 @@ struct sentest_state {
   struct sentest_config config;
 
   // Current path, eg. "ints/can be added"
-  struct sentest_vec_string path;
+  struct sentest_vec_char path;
+
+  struct sentest_vec_size_t path_seg_lengths;
   uint32_t tests_passed;
   uint32_t tests_run;
   clock_t start_time;
@@ -125,7 +141,7 @@ void sentest_vec_string_push(struct sentest_vec_string *vec, char *string) {
 static
 struct sentest_vec_test_aggregates sentest_vec_test_aggregate_new(void) {
   struct sentest_vec_test_aggregates res = {
-    .data = malloc(sizeof(char*) * VEC_INITIAL_CAPACITY),
+    .data = malloc(sizeof(struct sentest_aggregate) * VEC_INITIAL_CAPACITY),
     .length = 0,
     .capacity = VEC_INITIAL_CAPACITY,
   };
@@ -133,12 +149,31 @@ struct sentest_vec_test_aggregates sentest_vec_test_aggregate_new(void) {
 }
 
 static
-void sentest_vec_test_aggregate_push(struct sentest_vec_test_aggregates *vec, const struct test_aggregate test_aggregate) {
+void sentest_vec_test_aggregate_push(struct sentest_vec_test_aggregates *vec, const struct sentest_aggregate sentest_aggregate) {
   if (vec->length == vec->capacity) {
     vec->capacity += vec->capacity >> 1;
-    vec->data = realloc(vec->data, sizeof(char*) * vec->capacity);
+    vec->data = realloc(vec->data, sizeof(struct sentest_aggregate) * vec->capacity);
   }
-  vec->data[vec->length++] = test_aggregate;
+  vec->data[vec->length++] = sentest_aggregate;
+}
+
+static
+struct sentest_vec_size_t sentest_vec_size_t_new(void) {
+  struct sentest_vec_size_t res = {
+    .data = malloc(sizeof(size_t) * VEC_INITIAL_CAPACITY),
+    .length = 0,
+    .capacity = VEC_INITIAL_CAPACITY,
+  };
+  return res;
+}
+
+static
+void sentest_vec_size_t_push(struct sentest_vec_size_t *vec, size_t elem) {
+  if (vec->length == vec->capacity) {
+    vec->capacity += vec->capacity >> 1;
+    vec->data = realloc(vec->data, sizeof(size_t) * vec->capacity);
+  }
+  vec->data[vec->length++] = elem;
 }
 
 static
@@ -155,7 +190,7 @@ static
 void sentest_vec_test_action_push(struct sentest_vec_test_action *vec, enum sentest_action action) {
   if (vec->length == vec->capacity) {
     vec->capacity += vec->capacity >> 1;
-    vec->data = realloc(vec->data, sizeof(char*) * vec->capacity);
+    vec->data = realloc(vec->data, sizeof(enum sentest_action) * vec->capacity);
   }
   vec->data[vec->length++] = action;
 }
@@ -174,23 +209,67 @@ static
 void sentest_vec_failure_push(struct sentest_vec_failure *vec, struct sentest_failure failure) {
   if (vec->length == vec->capacity) {
     vec->capacity += vec->capacity >> 1;
-    vec->data = realloc(vec->data, sizeof(char*) * vec->capacity);
+    vec->data = realloc(vec->data, sizeof(struct sentest_failure) * vec->capacity);
   }
   vec->data[vec->length++] = failure;
 }
 
 static
+struct sentest_vec_char sentest_vec_char_new(void) {
+  struct sentest_vec_char res = {
+    .data = malloc(VEC_INITIAL_CAPACITY),
+    .length = 0,
+    .capacity = VEC_INITIAL_CAPACITY,
+  };
+  res.data[res.length++] = '\0';
+  return res;
+}
+
+static
+void sentest_vec_char_push_pathseg(struct sentest_vec_char *vec, const char *str, size_t len) {
+  if (vec->length + len + 1 >= vec->capacity) {
+    vec->capacity = MAX(vec->capacity + (vec->capacity >> 1), vec->length + len + 1);
+    vec->data = realloc(vec->data, vec->capacity);
+  }
+  // Replace null-terminator with '/'
+  vec->data[vec->length - 1] = '/';
+  strcpy(&vec->data[vec->length], str);
+  vec->length += 1 + len;
+}
+
+static
+size_t sentest_depth(struct sentest_state *state) {
+  return state->path_seg_lengths.length;
+}
+
+static
 void sentest_print_depth_indent(struct sentest_state *state) {
-  for (uint8_t i = 0; i < state->path.length * TEST_INDENT; i++) {
+  for (uint32_t i = 0; i < sentest_depth(state) * TEST_INDENT; i++) {
     putc(' ', state->config.output);
   }
+}
+
+static
+void sentest_push_path(struct sentest_state *state, const char *segment) {
+  size_t length = strlen(segment);
+  sentest_vec_char_push_pathseg(&state->path, segment, length);
+  sentest_vec_size_t_push(&state->path_seg_lengths, length);
+}
+
+static
+void sentest_pop_path(struct sentest_state *state) {
+  assert(state->path_seg_lengths.length > 0);
+  size_t seg_length = state->path_seg_lengths.data[--state->path_seg_lengths.length];
+  state->path.length -= seg_length + 1;
+  state->path.data[state->path.length - 1] = '\0';
 }
 
 void sentest_group_start(struct sentest_state *state, char *name) {
   assert(!state->in_test);
   sentest_print_depth_indent(state);
   fprintf(state->config.output, "%s\n", name);
-  sentest_vec_string_push(&state->path, name);
+  fflush(state->config.output);
+  sentest_push_path(state, name);
   state->should_exit_group = false;
   if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, GROUP_ENTER);
@@ -200,7 +279,7 @@ void sentest_group_start(struct sentest_state *state, char *name) {
 
 void sentest_group_end(struct sentest_state *state) {
   assert(!state->in_test);
-  state->path.length--;
+  sentest_pop_path(state);
   state->should_exit_group = true;
   if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, GROUP_LEAVE);
@@ -212,18 +291,11 @@ static
 void sentest_fail_with(struct sentest_state *state, char *reason) {
   assert(state->in_test);
   state->current_failed = true;
-  size_t path_part_amount = state->path.length + 1;
   struct sentest_failure f = {
-    .path = {
-      .length = path_part_amount,
-      .data = malloc(sizeof(char*) * path_part_amount),
-    },
+    .path = malloc(state->path.length),
     .reason = reason
   };
-  for (size_t i = 0; i < state->path.length; i++) {
-    f.path.data[i] = state->path.data[i];
-  }
-  f.path.data[path_part_amount - 1] = state->current_name;
+  memcpy(f.path, state->path.data, state->path.length);
   sentest_vec_failure_push(&state->failures, f);
   if (state->config.junit_output_path) {
     sentest_vec_test_action_push(&state->actions, TEST_FAIL);
@@ -273,12 +345,11 @@ bool sentest_assert_neq_internal(struct sentest_state *state, bool is_equal, con
 
 void sentest_start_internal(struct sentest_state *state, char *name) {
   assert(!state->in_test);
-  assert(state->path.length > 0);
-  sentest_vec_string_push(&state->path, name);
+  assert(sentest_depth(state) > 0);
+  sentest_push_path(state, name);
   state->in_test = true;
   sentest_print_depth_indent(state);
-  fputs(name, state->config.output);
-  putc(' ', state->config.output);
+  fprintf(state->config.output, "%s ", name);
   // we want to know what test is being run when we crash
   fflush(state->config.output);
   state->current_name = name;
@@ -302,7 +373,7 @@ void sentest_end_internal(struct sentest_state *state) {
     sentest_color(state, TERM_RESET));
   if (!state->current_failed)
     state->tests_passed++;
-  state->path.length--;
+  sentest_pop_path(state);
   state->tests_run++;
   state->in_test = false;
   if (state->config.junit_output_path) {
@@ -314,7 +385,8 @@ struct sentest_state *sentest_start(struct sentest_config config) {
   struct sentest_state *res = (struct sentest_state*) malloc(sizeof(struct sentest_state));
   struct sentest_state state = {
     .config = config,
-    .path = sentest_vec_string_new(),
+    .path = sentest_vec_char_new(),
+    .path_seg_lengths = sentest_vec_size_t_new(),
     .tests_passed = 0,
     .tests_run = 0,
     .start_time = clock(),
@@ -335,52 +407,12 @@ struct sentest_state *sentest_start(struct sentest_config config) {
 }
 
 static
-void sentest_print_test_path(struct sentest_string_arr v, FILE *out) {
-  if (v.length == 0)
-    return;
-  fputs(v.data[0], out);
-  for (size_t i = 1; i < v.length; i++) {
-    putc('/', out);
-    fputs(v.data[i], out);
-  }
-}
-
-static
-char *sentest_print_test_path_string(struct sentest_vec_string v) {
-  // 1 for the null terminator
-  size_t length = 1;
-
-  if (v.length == 0) {
-    char *res = calloc(1, 1);
-    return res;  }
-
-  length += strlen(v.data[0]);
-
-  for (size_t i = 1; i < v.length; i++) {
-    length += 1 + strlen(v.data[i]);
-  }
-
-  char *res = malloc(length);
-
-  size_t ind = 0;
-  strcpy(&res[ind], v.data[0]);
-  ind += strlen(v.data[0]);
-  for (size_t i = 1; i < v.length; i++) {
-    res[ind++] = '/';
-    strcpy(&res[ind], v.data[i]);
-    ind += strlen(v.data[i]);
-  }
-
-  return res;
-}
-
-static
 void sentest_print_failure(struct sentest_state *state, struct sentest_failure f) {
   fprintf(state->config.output,
     "\n%sFAILED%s: ",
     sentest_color(state, TERM_RED),
     sentest_color(state, TERM_RESET));
-  sentest_print_test_path(f.path, state->config.output);
+  fputs(f.path, state->config.output);
   putc('\n', state->config.output);
   fputs(f.reason, state->config.output);
   putc('\n', state->config.output);
@@ -401,7 +433,7 @@ void sentest_write_results(struct sentest_state *state) {
   bool failed = false;
   struct sentest_vec_test_aggregates agg_stack = sentest_vec_test_aggregate_new();
   struct sentest_vec_test_aggregates aggs = sentest_vec_test_aggregate_new();
-  struct test_aggregate current = {.tests = 0, .failures = 0};
+  struct sentest_aggregate current = {.tests = 0, .failures = 0};
 
   for (size_t i = 0; i < state->actions.length; i++) {
     enum sentest_action action = state->actions.data[state->actions.length - 1 - i];
@@ -412,7 +444,7 @@ void sentest_write_results(struct sentest_state *state) {
         current.failures = 0;
         break;
       case GROUP_ENTER: {
-        struct test_aggregate inner;
+        struct sentest_aggregate inner;
         inner = agg_stack.data[--agg_stack.length];
         sentest_vec_test_aggregate_push(&aggs, current);
         current.tests += inner.tests;
@@ -471,7 +503,7 @@ void sentest_write_results(struct sentest_state *state) {
 
     switch (action) {
       case GROUP_ENTER: {
-        struct test_aggregate agg = aggs.data[agg_ind];
+        struct sentest_aggregate agg = aggs.data[agg_ind];
         agg_ind--;
         char *str = state->strs.data[str_ind];
         str_ind++;
@@ -524,10 +556,7 @@ bool sentest_matches(struct sentest_state *restrict state) {
   }
   // TODO remove this, by treating the current path as a stack allocator
   // or alternatively, match on the vec_string directly
-  char *path_string = sentest_print_test_path_string(state->path);
-  state->path.length--;
-  bool res = strstr(path_string, state->filter_str) != NULL;
-  free(path_string);
+  bool res = strstr(state->path.data, state->filter_str) != NULL;
   return res;
 }
 
