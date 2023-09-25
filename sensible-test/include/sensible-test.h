@@ -25,21 +25,16 @@ struct sentest_config {
   for (sentest_group_start(state, desc); sentest_group_should_continue(state); sentest_group_end(state))
 
 #define sentest_assert(state, b)                                               \
-  if (!(b))                                                                    \
-    sentest_fail_eq(state, #b, "true");
+  (!(b)) ? sentest_fail_eq(state, #b, "true"), true : false
 
 #define sentest_assert_eq(state, a, b)                                         \
-  if ((a) != (b))                                                              \
-    sentest_fail_eq(state, #a, #b);
+  ((a) != (b)) ? sentest_fail_eq(state, #a, #b), true : false
 
 #define sentest_assert_eq_fmt(state, a, b, fmt)                                \
-  if ((a) != (b)) {                                                            \
-    sentest_failf(state, #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b);  \
-  }
+  ((a) != (b)) ? sentest_failf(state, #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b), true : false
 
 #define sentest_assert_neq(state, a, b)                                        \
-  if ((a) == (b))                                                              \
-    sentest_fail_eq(state, #a, #b);
+  ((a) == (b)) ? sentest_fail_eq(state, #a, #b), true : false
 
 #define sentest_failf(state, fmt, ...) sentest_failf_internal(state, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
