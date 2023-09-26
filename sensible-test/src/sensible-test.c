@@ -21,6 +21,7 @@
 #define TERM_RED TERM_ESCAPE "[0;31m"
 #define TERM_GREEN TERM_ESCAPE "[0;32m"
 #define TERM_RESET TERM_ESCAPE "[0m"
+#define TERM_YELLOW TERM_ESCAPE "[0;33m"
 
 
 // Useful types
@@ -88,7 +89,9 @@ struct sentest_state {
   struct sentest_vec_char path;
 
   struct sentest_vec_size_t path_seg_lengths;
+  uint32_t depth;
   uint32_t tests_passed;
+  uint32_t tests_filtered_out;
   uint32_t tests_run;
   clock_t start_time;
   clock_t end_time;
@@ -96,13 +99,13 @@ struct sentest_state {
   char *current_name;
   struct sentest_vec_test_action actions;
   uint8_t  current_failed : 1;
+  // This is also false if the test didn't match the filter string
   uint8_t in_test : 1;
   // used in the implementation of the for loop that
   // test_group uses
   uint8_t should_exit_group : 1;
   struct sentest_vec_char strs;
   struct sentest_vec_size_t str_starts;
-  const char *filter_str;
 };
 
 
@@ -172,6 +175,9 @@ struct sentest_vec_char sentest_vec_char_new(void) {
     .length = 0,
     .capacity = VEC_INITIAL_CAPACITY,
   };
+  // This is kind of silly, but sentest_vec_char_push_pathseg
+  // expects to be able to replace a null terminator with 
+  // a slash, so we add it on creation.
   res.data[res.length++] = '\0';
   return res;
 }
@@ -180,35 +186,32 @@ struct sentest_vec_char sentest_vec_char_new(void) {
 static
 void sentest_vec_char_push_pathseg(struct sentest_vec_char *vec, const char *str, size_t length) {
   // yes, gt is intentional
-  if (vec->length + length > vec->capacity) {
+  if (vec->length + length + 1 > vec->capacity) {
     vec->capacity = MAX(vec->capacity + (vec->capacity >> 1), vec->length + length + 1);
     vec->data = realloc(vec->data, vec->capacity);
   }
   // Replace null-terminator with '/'
   vec->data[vec->length - 1] = '/';
   memcpy(&vec->data[vec->length], str, length);
+  vec->data[vec->length + length] = '\0';
   vec->length += 1 + length;
 }
 
 // Push a string into a buffer of strings
 static
 void sentest_vec_char_push_string(struct sentest_vec_char *vec, const char *str, size_t length) {
-  if (vec->length + length >= vec->capacity) {
+  if (vec->length + length + 1 > vec->capacity) {
     vec->capacity = MAX(vec->capacity + (vec->capacity >> 1), vec->length + length + 1);
     vec->data = realloc(vec->data, vec->capacity);
   }
   memcpy(&vec->data[vec->length], str, length);
+  vec->data[vec->length + length] = '\0';
   vec->length += 1 + length;
 }
 
 static
-size_t sentest_depth(struct sentest_state *restrict state) {
-  return state->path_seg_lengths.length;
-}
-
-static
 void sentest_print_depth_indent(struct sentest_state *restrict state) {
-  for (uint32_t i = 0; i < sentest_depth(state) * TEST_INDENT; i++) {
+  for (uint32_t i = 0; i < state->depth * TEST_INDENT; i++) {
     putc(' ', state->config.output);
   }
 }
@@ -281,7 +284,11 @@ bool sentest_print_failures(struct sentest_state *restrict state) {
       case GROUP_LEAVE:
         sentest_pop_path(state);
         break;
-      case GROUP_ENTER:
+      case GROUP_ENTER: {
+        char *segment = &state->strs.data[state->str_starts.data[str_ind++]];
+        sentest_push_path(state, segment, strlen(segment));
+        break;
+      }
       case TEST_ENTER: {
         char *segment = &state->strs.data[state->str_starts.data[str_ind++]];
         sentest_push_path(state, segment, strlen(segment));
@@ -304,15 +311,6 @@ bool sentest_print_failures(struct sentest_state *restrict state) {
     }
   }
   return had_failure;
-}
-
-static
-bool sentest_matches(struct sentest_state *restrict state) {
-  if (state->filter_str == NULL) {
-    return true;
-  }
-  bool res = strstr(state->path.data, state->filter_str) != NULL;
-  return res;
 }
 
 static
@@ -467,7 +465,10 @@ void sentest_group_start(struct sentest_state *restrict state, char *name) {
   sentest_print_depth_indent(state);
   size_t length = fprintf(state->config.output, "%s\n", name) - 1;
   fflush(state->config.output);
-  sentest_push_path(state, name, length);
+  state->depth++;
+  if (state->config.filter_str != NULL) {
+    sentest_push_path(state, name, length);
+  }
   state->should_exit_group = false;
   sentest_vec_test_action_push(&state->actions, GROUP_ENTER);
   sentest_push_string(state, name, length);
@@ -475,7 +476,10 @@ void sentest_group_start(struct sentest_state *restrict state, char *name) {
 
 void sentest_group_end(struct sentest_state *restrict state) {
   assert(!state->in_test);
-  sentest_pop_path(state);
+  if (state->config.filter_str != NULL) {
+    sentest_pop_path(state);
+  }
+  state->depth--;
   state->should_exit_group = true;
   sentest_vec_test_action_push(&state->actions, GROUP_LEAVE);
 }
@@ -510,11 +514,26 @@ bool sentest_assert_neq_internal(struct sentest_state *restrict state, bool is_e
 
 void sentest_start_internal(struct sentest_state *restrict state, char *name) {
   assert(!state->in_test);
-  assert(sentest_depth(state) > 0);
+  assert(state->depth > 0);
   sentest_print_depth_indent(state);
   size_t length = fprintf(state->config.output, "%s ", name) - 1;
-  sentest_push_path(state, name, length);
-  state->in_test = true;
+
+  if (state->config.filter_str != NULL) {
+    sentest_push_path(state, name, length);
+    bool matched = strstr(state->path.data, state->config.filter_str) != NULL;
+    sentest_pop_path(state);
+    if (!matched) {
+      // not necessary
+      // state->in_test = false;
+      fprintf(state->config.output, "%s%s%s\n",
+        sentest_color(state, TERM_YELLOW),
+        "⇴",
+        sentest_color(state, TERM_RESET));
+      state->tests_filtered_out++;
+      return;
+    }
+  }
+
   // we want to know what test is being run when we crash
   fflush(state->config.output);
   state->current_name = name;
@@ -531,7 +550,6 @@ void sentest_end_internal(struct sentest_state *restrict state) {
     sentest_color(state, TERM_RESET));
   if (!state->current_failed)
     state->tests_passed++;
-  sentest_pop_path(state);
   state->tests_run++;
   state->in_test = false;
   sentest_vec_test_action_push(&state->actions, TEST_LEAVE);
@@ -553,7 +571,6 @@ struct sentest_state *sentest_start(struct sentest_config config) {
     .in_test = false,
     .strs = sentest_vec_char_new(),
     .str_starts = sentest_vec_size_t_new(),
-    .filter_str = config.filter_str,
   };
   if (state.config.output == NULL) {
     state.config.output = stdout;
@@ -563,7 +580,8 @@ struct sentest_state *sentest_start(struct sentest_config config) {
 }
 
 bool sentest_test_should_continue(struct sentest_state *restrict state) {
-  return state->in_test && sentest_matches(state);
+  // not in_test can also mean didn't match filter
+  return state->in_test;
 }
 
 bool sentest_group_should_continue(struct sentest_state *restrict state) {
