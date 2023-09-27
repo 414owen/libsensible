@@ -121,13 +121,13 @@ int main(void) {
         output = read_entire_file(state, junit_out_path);
       }
       if (output == NULL) break;
-      sentest(state, "contains balances <testsuites>") {
+      sentest(state, "contains balanced <testsuites>") {
         assert_tags_match(state, output, "testsuites");
       }
-      sentest(state, "contains balances <testsuite>s") {
+      sentest(state, "contains balanced <testsuite>s") {
         assert_tags_match(state, output, "testsuite");
       }
-      sentest(state, "contains balances <testcase>s") {
+      sentest(state, "contains balanced <testcase>s") {
         assert_tags_match(state, output, "testcase");
       }
       free(output);
@@ -159,13 +159,13 @@ int main(void) {
         output = read_entire_file(state, junit_out_path);
       }
       if (output == NULL) break;
-      sentest(state, "contains balances <testsuites>") {
+      sentest(state, "contains balanced <testsuites>") {
         assert_tags_match(state, output, "testsuites");
       }
-      sentest(state, "contains balances <testsuite>s") {
+      sentest(state, "contains balanced <testsuite>s") {
         assert_tags_match(state, output, "testsuite");
       }
-      sentest(state, "contains balances <testcase>s") {
+      sentest(state, "contains balanced <testcase>s") {
         assert_tags_match(state, output, "testcase");
       }
       free(output);
