@@ -2,40 +2,57 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
+#ifndef SENSIBLE_BITVEC_H
+#define SENSIBLE_BITVEC_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <limits.h>
 
-#define BITVECTOR_CELL unsigned char
-#define BITVECTOR_CELL_BITS CHAR_BIT
+#define SENSIBLE_BITVECTOR_CELL unsigned char
+#define SENSIBLE_BITVECTOR_CELL_BITS CHAR_BIT
+
+#ifndef SENSIBLE_BITSET_H
 
 // Assuming a uint8_t *
-#define BITMASK(b) (1 << ((b) % BITVECTOR_CELL_BITS))
-#define BITSLOT(b) ((b) / BITVECTOR_CELL_BITS)
-#define BITSET(a, b) ((a)[BITSLOT(b)] |= BITMASK(b))
-#define BITCLEAR(a, b) ((a)[BITSLOT(b)] &= ~BITMASK(b))
-#define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b))
-#define BITNSLOTS(nb) ((nb + BITVECTOR_CELL_BITS - 1) / BITVECTOR_CELL_BITS)
+#define SENSIBLE_BITMASK(b) (1 << ((b) % SENSIBLE_BITVECTOR_CELL_BITS))
+#define SENSIBLE_BITSLOT(b) ((b) / SENSIBLE_BITVECTOR_CELL_BITS)
+#define SENSIBLE_BITSET(a, b) ((a)[SENSIBLE_BITSLOT(b)] |= SENSIBLE_BITMASK(b))
+#define SENSIBLE_BITCLEAR(a, b) ((a)[SENSIBLE_BITSLOT(b)] &= ~SENSIBLE_BITMASK(b))
+#define SENSIBLE_BITTEST(a, b) ((a)[SENSIBLE_BITSLOT(b)] & SENSIBLE_BITMASK(b))
+#define SENSIBLE_BITNSLOTS(nb) ((nb + SENSIBLE_BITVECTOR_CELL_BITS - 1) / SENSIBLE_BITVECTOR_CELL_BITS)
 
-struct bitvec {
-  BITVECTOR_CELL *restrict data;
+#endif
+
+struct senbitvec {
+  SENSIBLE_BITVECTOR_CELL *restrict data;
   // in bits
   size_t length;
   // in bytes
   size_t capacity;
 };
 
-struct bitvec bitvec_new(size_t capacity_bits);
+struct senbitvec senbitvec_new(size_t capacity_bits);
 
-bool bitvec_get(struct bitvec bv, size_t n);
+bool senbitvec_get(struct senbitvec bv, size_t n);
 
-void bitvec_set_true(struct bitvec bv, size_t n);
-void bitvec_set_false(struct bitvec bv, size_t n);
-void bitvec_set(struct bitvec bv, bool value, size_t n);
+void senbitvec_set_true(struct senbitvec bv, size_t n);
+void senbitvec_set_false(struct senbitvec bv, size_t n);
+void senbitvec_set(struct senbitvec bv, bool value, size_t n);
 
-void bitvec_push_true(struct bitvec *bv);
-void bitvec_push_false(struct bitvec *bv);
-void bitvec_push(struct bitvec *bv, bool value);
+void senbitvec_push_true(struct senbitvec *bv);
+void senbitvec_push_false(struct senbitvec *bv);
+void senbitvec_push(struct senbitvec *bv, bool value);
 
-bool bitvec_pop(struct bitvec *bv);
-void bitvec_free(struct bitvec *bv);
+bool senbitvec_pop(struct senbitvec *bv);
+void senbitvec_free(struct senbitvec *bv);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

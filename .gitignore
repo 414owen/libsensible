@@ -12,3 +12,4 @@ release
 release-debug
 
 compile_commands.json
+.helix
