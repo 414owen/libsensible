@@ -2,16 +2,13 @@
 #
 # SPDX-License-Identifier: Unlicense
 
-add_custom_target(bench
-  COMMAND ${PROJECT_NAME}-bench
-  COMMENT "Run benchmark suite"
-)
+add_executable(${PROJECT_NAME}-data-structures-suite main.c)
+target_link_libraries(${PROJECT_NAME}-data-structures-suite sensible-test)
+target_link_libraries(${PROJECT_NAME}-data-structures-suite ${PROJECT_NAME}-data-structures)
+link_directories(../../sensible-test)
+target_include_directories(${PROJECT_NAME}-data-structures-suite PRIVATE ../include)
 
-add_executable(${PROJECT_NAME}-suite main.c)
-target_link_libraries(${PROJECT_NAME}-suite ${PROJECT_NAME})
-target_include_directories(${PROJECT_NAME}-suite PRIVATE ../include)
-
-add_custom_target(check
-  COMMAND ${PROJECT_NAME}-suite
+add_custom_target(data-structures-check
+  COMMAND ${PROJECT_NAME}-data-structures-suite
   COMMENT "Run test suite"
 )

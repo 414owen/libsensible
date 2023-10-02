@@ -2,41 +2,15 @@
 #
 # SPDX-License-Identifier: Unlicense
 
-cmake_minimum_required(VERSION 3.9)
-project(sensible-test
-  VERSION 1.0.0
-  DESCRIPTION "Sensible test library"
-  LANGUAGES C
-)
-
-set(CMAKE_C_STANDARD 99)
-
-# Adds a compile option if we're on GCC or Clang
-function(add_modern_compile_opt)
-  if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(${ARGV})
-  endif()
-endfunction()
-
-add_modern_compile_opt(-pedantic -Wall -Wextra)
-
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  add_compile_options(-O0)
-  if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    add_compile_options(-gdwarf-4 -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined)
-    add_link_options(-fsanitize=address -fsanitize=undefined)
-  endif()
-endif()
-
 # Library
 
-add_library(${PROJECT_NAME} SHARED
+add_library(${PROJECT_NAME}-test SHARED
   src/sensible-test.c
   src/sensible-test.h
 )
-set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
-set_target_properties(${PROJECT_NAME} PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
-set_target_properties(${PROJECT_NAME} PROPERTIES PUBLIC_HEADER include/sensible-test.h)
+set_target_properties(${PROJECT_NAME}-test PROPERTIES VERSION ${PROJECT_VERSION})
+set_target_properties(${PROJECT_NAME}-test PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
+set_target_properties(${PROJECT_NAME}-test PROPERTIES PUBLIC_HEADER include/sensible-test.h)
 
 
 # Test suite
