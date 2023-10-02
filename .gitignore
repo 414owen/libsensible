@@ -9,5 +9,6 @@
 build
 debug
 release
+release-debug
 
 compile_commands.json

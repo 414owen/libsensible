@@ -12,11 +12,11 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
 static
-void bitvec_reserve_one(struct bitvec *bs) {
-  const size_t required_slots = BITNSLOTS(bs->length + 1);
-  if (required_slots > bs->capacity) {
-    bs->capacity += bs->capacity >> 1;
-    bs->data = realloc(bs->data, bs->capacity);
+void bitvec_reserve_one(struct bitvec *bv) {
+  const size_t required_slots = BITNSLOTS(bv->length + 1);
+  if (required_slots > bv->capacity) {
+    bv->capacity += bv->capacity >> 1;
+    bv->data = realloc(bv->data, bv->capacity);
   }
 }
 
@@ -31,60 +31,60 @@ struct bitvec bitvec_new(size_t capacity_bits) {
   return res;
 }
 
-bool bitvec_get(struct bitvec bs, size_t n) {
-  assert(n < bs.length);
-  return BITTEST(bs.data, n);
+bool bitvec_get(struct bitvec bv, size_t n) {
+  assert(n < bv.length);
+  return BITTEST(bv.data, n);
 }
 
-void bitvec_set_true(struct bitvec bs, size_t n) {
-  assert(n < bs.length);
-  BITSET(bs.data, n);
+void bitvec_set_true(struct bitvec bv, size_t n) {
+  assert(n < bv.length);
+  BITSET(bv.data, n);
 }
 
-void bitvec_set_false(struct bitvec bs, size_t n) {
-  assert(n < bs.length);
-  BITCLEAR(bs.data, n);
+void bitvec_set_false(struct bitvec bv, size_t n) {
+  assert(n < bv.length);
+  BITCLEAR(bv.data, n);
 }
 
-void bitvec_set(struct bitvec bs, bool value, size_t n) {
-  assert(n < bs.length);
+void bitvec_set(struct bitvec bv, bool value, size_t n) {
+  assert(n < bv.length);
   if (value) {
-    bitvec_set_true(bs, n);
+    bitvec_set_true(bv, n);
   } else {
-    bitvec_set_false(bs, n);
+    bitvec_set_false(bv, n);
   }
 }
 
-void bitvec_push_true(struct bitvec *bs) {
-  bitvec_reserve_one(bs);
-  BITSET(bs->data, bs->length);
-  bs->length++;
+void bitvec_push_true(struct bitvec *bv) {
+  bitvec_reserve_one(bv);
+  BITSET(bv->data, bv->length);
+  bv->length++;
 }
 
-void bitvec_push_false(struct bitvec *bs) {
-  bitvec_reserve_one(bs);
-  BITCLEAR(bs->data, bs->length);
-  bs->length++;
+void bitvec_push_false(struct bitvec *bv) {
+  bitvec_reserve_one(bv);
+  BITCLEAR(bv->data, bv->length);
+  bv->length++;
 }
 
-void bitvec_push(struct bitvec *bs, bool value) {
+void bitvec_push(struct bitvec *bv, bool value) {
   if (value) {
-    bitvec_push_true(bs);
+    bitvec_push_true(bv);
   } else {
-    bitvec_push_false(bs);
+    bitvec_push_false(bv);
   }
 }
 
-bool bitvec_pop(struct bitvec *bs) {
-  assert(bs->length > 0);
-  bs->length--;
-  return BITTEST(bs->data, bs->length);
+bool bitvec_pop(struct bitvec *bv) {
+  assert(bv->length > 0);
+  bv->length--;
+  return BITTEST(bv->data, bv->length);
 }
 
-void bitvec_free(struct bitvec *bs) {
+void bitvec_free(struct bitvec *bv) {
 #ifndef NDEBUG
-  bs->capacity = 0;
-  bs->length = 0;
+  bv->capacity = 0;
+  bv->length = 0;
 #endif
-  free(bs->data);
+  free(bv->data);
 }

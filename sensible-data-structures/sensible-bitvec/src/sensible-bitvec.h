@@ -27,15 +27,15 @@ struct bitvec {
 
 struct bitvec bitvec_new(size_t capacity_bits);
 
-bool bitvec_get(struct bitvec bs, size_t n);
+bool bitvec_get(struct bitvec bv, size_t n);
 
-void bitvec_set_true(struct bitvec bs, size_t n);
-void bitvec_set_false(struct bitvec bs, size_t n);
-void bitvec_set(struct bitvec bs, bool value, size_t n);
+void bitvec_set_true(struct bitvec bv, size_t n);
+void bitvec_set_false(struct bitvec bv, size_t n);
+void bitvec_set(struct bitvec bv, bool value, size_t n);
 
-void bitvec_push_true(struct bitvec *bs);
-void bitvec_push_false(struct bitvec *bs);
-void bitvec_push(struct bitvec *bs, bool value);
+void bitvec_push_true(struct bitvec *bv);
+void bitvec_push_false(struct bitvec *bv);
+void bitvec_push(struct bitvec *bv, bool value);
 
-bool bitvec_pop(struct bitvec *bs);
-void bitvec_free(struct bitvec *bs);
+bool bitvec_pop(struct bitvec *bv);
+void bitvec_free(struct bitvec *bv);
