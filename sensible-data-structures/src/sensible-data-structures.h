@@ -17,7 +17,7 @@
 #define BITTEST(a, b) ((a)[BITSLOT(b)] & BITMASK(b))
 #define BITNSLOTS(nb) ((nb + BITVECTOR_CELL_BITS - 1) / BITVECTOR_CELL_BITS)
 
-struct bitset {
+struct bitvec {
   BITVECTOR_CELL *restrict data;
   // in bits
   size_t length;
@@ -25,17 +25,17 @@ struct bitset {
   size_t capacity;
 };
 
-struct bitset bitset_new(size_t capacity_bits);
+struct bitvec bitvec_new(size_t capacity_bits);
 
-bool bitset_get(struct bitset bs, size_t n);
+bool bitvec_get(struct bitvec bs, size_t n);
 
-void bitset_set_true(struct bitset bs, size_t n);
-void bitset_set_false(struct bitset bs, size_t n);
-void bitset_set(struct bitset bs, bool value, size_t n);
+void bitvec_set_true(struct bitvec bs, size_t n);
+void bitvec_set_false(struct bitvec bs, size_t n);
+void bitvec_set(struct bitvec bs, bool value, size_t n);
 
-void bitset_push_true(struct bitset *bs);
-void bitset_push_false(struct bitset *bs);
-void bitset_push(struct bitset *bs, bool value);
+void bitvec_push_true(struct bitvec *bs);
+void bitvec_push_false(struct bitvec *bs);
+void bitvec_push(struct bitvec *bs, bool value);
 
-bool bitset_pop(struct bitset *bs);
-void bitset_free(struct bitset *bs);
+bool bitvec_pop(struct bitvec *bs);
+void bitvec_free(struct bitvec *bs);
