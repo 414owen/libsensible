@@ -29,6 +29,9 @@ jobs:
     - name: REUSE Compliance Check
       uses: fsfe/reuse-action@v2
   Tests:
+    permissions:
+      contents: read
+      checks: write
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
