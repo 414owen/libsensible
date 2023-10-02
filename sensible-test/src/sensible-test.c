@@ -176,7 +176,7 @@ struct sentest_vec_char sentest_vec_char_new(void) {
     .capacity = VEC_INITIAL_CAPACITY,
   };
   // This is kind of silly, but sentest_vec_char_push_pathseg
-  // expects to be able to replace a null terminator with 
+  // expects to be able to replace a null terminator with
   // a slash, so we add it on creation.
   res.data[res.length++] = '\0';
   return res;
@@ -199,7 +199,7 @@ void sentest_vec_char_push_pathseg(struct sentest_vec_char *vec, const char *str
 
 // Push a string into a buffer of strings
 static
-void sentest_vec_char_push_string(struct sentest_vec_char *vec, const char *str, size_t length) {
+void sentest_vec_char_push_string(struct sentest_vec_char *restrict vec, const char *restrict str, size_t length) {
   if (vec->length + length + 1 > vec->capacity) {
     vec->capacity = MAX(vec->capacity + (vec->capacity >> 1), vec->length + length + 1);
     vec->data = realloc(vec->data, vec->capacity);
@@ -236,9 +236,9 @@ void sentest_pop_path(struct sentest_state *restrict state) {
   state->path.data[state->path.length - 1] = '\0';
 }
 
-// Static to avoid someone failing with a non-alloced string
+// Copies the string before returning
 static
-void sentest_fail_with(struct sentest_state *restrict state, char *reason, size_t length) {
+void sentest_fail_with(struct sentest_state *restrict state, char *restrict reason, size_t length) {
   assert(state->in_test);
   state->current_failed = true;
   sentest_push_string(state, reason, length);
