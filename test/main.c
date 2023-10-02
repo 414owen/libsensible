@@ -8,7 +8,7 @@
 
 #include "../sensible-test/src/sensible-test.h"
 #include "../sensible-test/test/suite.h"
-#include "../sensible-data-structures/test/suite.h"
+#include "../sensible-data-structures/sensible-bitvec/test/suite.h"
 
 // This is the combined test suite for all sensible
 // libraries. It uses shared libraries built in all
@@ -28,6 +28,6 @@ int main(void) {
   };
   struct sentest_state *state = sentest_start(config);
   run_sensible_test_suite(state);
-  run_sensible_data_structure_suite(state);
+  run_sensible_bitvec_suite(state);
   return sentest_finish(state);
 }

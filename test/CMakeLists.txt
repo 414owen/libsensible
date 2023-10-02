@@ -7,7 +7,7 @@ target_link_libraries(
   ${PROJECT_NAME}-suite-exe
   ${PROJECT_NAME}-test
   ${PROJECT_NAME}-test-suite
-  ${PROJECT_NAME}-data-structures-suite
+  ${PROJECT_NAME}-bitvec-suite
 )
 
 add_custom_target(check

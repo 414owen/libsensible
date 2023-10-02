@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "sensible-data-structures.h"
+#include "sensible-bitvec.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 

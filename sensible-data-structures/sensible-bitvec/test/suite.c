@@ -7,12 +7,12 @@
 #include <string.h>
 #include <time.h>
 
-#include "../src/sensible-data-structures.h"
-#include "../../sensible-test/src/sensible-test.h"
+#include "../src/sensible-bitvec.h"
+#include "../../../sensible-test/src/sensible-test.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-void run_sensible_data_structure_suite(struct sentest_state *state) {
+void run_sensible_bitvec_suite(struct sentest_state *state) {
   sentest_group(state, "bitvecs") {
     sentest(state, "can be allocated and freed") {
       struct bitvec bs = bitvec_new(10);
