@@ -31,14 +31,14 @@ struct sentest_config {
   sentest_assert_eq_internal(state, (a) == (b), __FILE__, __LINE__, #a, #b)
 
 #define sentest_assert_eq_fmt(state, a, b, fmt)                                \
-  sentest_assertf(state, ((a) != (b)), #a " != " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b)
+  sentest_assertf(state, ((a) == (b)), #a " == " #b "\nExpected: '" fmt "', got: '" fmt "'", a, b)
 
 #define sentest_assert_neq(state, a, b)                                        \
   sentest_assert_neq_internal(state, ((a) == (b)), __FILE__, __LINE__, #a, #b)
 
 #define sentest_failf(state, fmt, ...) sentest_failf_internal(state, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
-#define sentest_assertf(state, assertion, fmt, ...) sentest_assertf_internal(struct sentest_state *state, assertion, __FILE__, __LINE__, fmt, __VA_ARGS__)
+#define sentest_assertf(state, assertion, fmt, ...) sentest_assertf_internal(state, assertion, __FILE__, __LINE__, fmt, __VA_ARGS__)
 
 struct sentest_state;
 
