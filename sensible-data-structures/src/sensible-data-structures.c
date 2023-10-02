@@ -16,7 +16,7 @@ void bitset_reserve_one(struct bitset *bs) {
   const size_t required_slots = BITNSLOTS(bs->length + 1);
   if (required_slots > bs->capacity) {
     bs->capacity += bs->capacity >> 1;
-    bs->data = realloc(bs->data, required_slots);
+    bs->data = realloc(bs->data, bs->capacity);
   }
 }
 
@@ -82,7 +82,9 @@ bool bitset_pop(struct bitset *bs) {
 }
 
 void bitset_free(struct bitset *bs) {
+#ifndef NDEBUG
   bs->capacity = 0;
   bs->length = 0;
+#endif
   free(bs->data);
 }
