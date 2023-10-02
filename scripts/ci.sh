@@ -6,9 +6,5 @@
 
 set -euo pipefail
 
-for dir in sensible-*; do
-  pushd "$dir"
-  cmake -B build
-  cmake --build build -t check
-  popd
-done
+cmake -DCMAKE_BUILD_TYPE=Debug -B debug
+cmake --build debug -t check

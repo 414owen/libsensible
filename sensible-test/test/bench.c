@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: Unlicense
 
+#include <stdio.h>
 #include <time.h>
 
-#include "sensible-test.h"
+#include "../src/sensible-test.h"
 
 #ifdef _WIN32
   #define DEVNULL "nul"

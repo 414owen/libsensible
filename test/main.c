@@ -6,7 +6,13 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "suite.h"
+#include "../sensible-test/src/sensible-test.h"
+#include "../sensible-test/test/suite.h"
+#include "../sensible-data-structures/test/suite.h"
+
+// This is the combined test suite for all sensible
+// libraries. It uses shared libraries built in all
+// testable subprojects.
 
 int main(void) {
   {
@@ -18,9 +24,10 @@ int main(void) {
     .output = stdout,
     .color = true,
     .filter_str = NULL,
-    .junit_output_path = NULL,
+    .junit_output_path = "test-results.xml",
   };
   struct sentest_state *state = sentest_start(config);
+  run_sensible_test_suite(state);
   run_sensible_data_structure_suite(state);
   return sentest_finish(state);
 }

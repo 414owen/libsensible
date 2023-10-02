@@ -28,5 +28,6 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   endif()
 endif()
 
+add_subdirectory(test EXCLUDE_FROM_ALL)
 add_subdirectory(sensible-test)
 add_subdirectory(sensible-data-structures)
