@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "sensible-test.h"
+#include "../src/sensible-test.h"
 
 // This is the test suite we're testing the output of.
 int run_example_suite(bool has_failure, const char *out_path, const char *junit_out_path) {
