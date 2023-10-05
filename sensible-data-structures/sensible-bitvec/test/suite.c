@@ -23,8 +23,8 @@ void run_sensible_bitvec_suite(struct sentest_state *state) {
         for (size_t i = 2; i < 50; i++) {
           size_t length = SENSIBLE_BITVECTOR_CELL_BITS * i;
           struct senbitvec bs = senbitvec_new(length);
-          sentest_assert_eq_fmt(state, bs.length, 0, "%zu");
-          sentest_assert_eq_fmt(state, bs.capacity, i, "%zu");
+          sentest_assert_eq_fmt(state, "zu", bs.length, 0);
+          sentest_assert_eq_fmt(state, "zu", bs.capacity, i);
           senbitvec_free(&bs);
         }
       }
@@ -40,7 +40,7 @@ void run_sensible_bitvec_suite(struct sentest_state *state) {
       for (size_t i = 0; i < bool_amount; i++) {
         bool got = senbitvec_pop(&bs);
         bool expected = hardcoded_bools[bool_amount - 1 - i];
-        sentest_assert_eq_fmt(state, got, expected, "%d");
+        sentest_assert_eq_fmt(state, "d", got, expected);
       }
       senbitvec_free(&bs);
     }
@@ -58,7 +58,7 @@ void run_sensible_bitvec_suite(struct sentest_state *state) {
       for (size_t i = 0; i < bool_amount; i++) {
         bool got = senbitvec_pop(&bs);
         bool expected = SENSIBLE_BITTEST(cells, bool_amount - 1 - i);
-        sentest_assert_eq_fmt(state, got, expected, "%d");
+        sentest_assert_eq_fmt(state, "d", got, expected);
       }
       senbitvec_free(&bs);
     }

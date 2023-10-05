@@ -64,13 +64,13 @@ void run_sensible_arena_suite(struct sentest_state *state) {
             volatile unsigned char *area = arena_alloc(&arena, first_alloc_size, 1);
             area[50] = 42;
           }
-          sentest_assert_eq_fmt(state, arena.size, capacity - first_alloc_size, "%zu");
+          sentest_assert_eq_fmt(state, "zu", arena.size, capacity - first_alloc_size);
           {
             volatile unsigned char *area = arena_alloc(&arena, allocation_size, 1);
             area[50] = 50;
           }
-          sentest_assert_eq_fmt(state, arena.size, capacity - first_alloc_size, "%zu");
-          sentest_assert_eq_fmt(state, arena.current, start_buffer, "%p");
+          sentest_assert_eq_fmt(state, "zu", arena.size, capacity - first_alloc_size);
+          sentest_assert_eq_fmt(state, "p", arena.current, start_buffer);
           arena_free(arena);
         }
       }
@@ -84,12 +84,12 @@ void run_sensible_arena_suite(struct sentest_state *state) {
         // 1MiB
         volatile unsigned char *area = arena_alloc(&arena, size, 1);
         area[50] = 42;
-        sentest_assert_eq_fmt(state, arena.size, ARENA_MIN_CHUNK_SIZE, "%zu");
+        sentest_assert_eq_fmt(state, "zu", arena.size, ARENA_MIN_CHUNK_SIZE);
         sentest_assert_eq(state, arena.current, chunk_data);
         sentest_assert_eq(state, arena.fresh_chunks, NULL);
         arena_clear(&arena);
         sentest_assert_eq(state, arena.current, chunk_data);
-        sentest_assert_eq_fmt(state, (unsigned char*) arena.fresh_chunks + sizeof(struct chunk_header), area, "%p");
+        sentest_assert_eq_fmt(state, "p", (unsigned char*) arena.fresh_chunks + sizeof(struct chunk_header), area);
         arena_free(arena);
       }
     }

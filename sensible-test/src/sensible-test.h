@@ -30,8 +30,8 @@ struct sentest_config {
 #define sentest_assert_eq(state, a, b)                                         \
   sentest_assert_eq_internal(state, (a) == (b), __FILE__, __LINE__, #a, #b)
 
-#define sentest_assert_eq_fmt(state, a, b, fmt)                                \
-  sentest_assertf(state, ((a) == (b)), #a " == " #b "\nGot: '" fmt "', expected: '" fmt "'", a, b)
+#define sentest_assert_eq_fmt(state, fmt, a, b)                                \
+  sentest_assertf(state, ((a) == (b)), #a " == " #b "\nGot: '%" fmt "', expected: '%" fmt "'", a, b)
 
 #define sentest_assert_neq(state, a, b)                                        \
   sentest_assert_neq_internal(state, ((a) == (b)), __FILE__, __LINE__, #a, #b)
