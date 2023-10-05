@@ -8,6 +8,7 @@ target_link_libraries(
   ${PROJECT_NAME}-test
   ${PROJECT_NAME}-test-suite
   ${PROJECT_NAME}-bitvec-suite
+  ${PROJECT_NAME}-arena-suite
 )
 
 add_custom_target(check

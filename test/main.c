@@ -9,13 +9,18 @@
 #include "../sensible-test/src/sensible-test.h"
 #include "../sensible-test/test/suite.h"
 #include "../sensible-data-structures/sensible-bitvec/test/suite.h"
+#include "../sensible-allocators/sensible-arena/test/suite.h"
 
 // This is the combined test suite for all sensible
 // libraries. It uses shared libraries built in all
 // testable subprojects.
 
-int main(void) {
-  {
+int main(int argc, char **argv) {
+  if (argc > 1) {
+    int seed = atoi(argv[1]);
+    printf("Using given seed: %d\n", seed);
+    srand(seed);
+  } else {
     time_t now = time(NULL);
     printf("Using random seed: %ld\n", now);
     srand(now);
@@ -29,5 +34,6 @@ int main(void) {
   struct sentest_state *state = sentest_start(config);
   run_sensible_test_suite(state);
   run_sensible_bitvec_suite(state);
+  run_sensible_arena_suite(state);
   return sentest_finish(state);
 }

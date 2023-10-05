@@ -4,6 +4,6 @@ SPDX-FileCopyrightText: 2023 The libsensible Authors
 SPDX-License-Identifier: Unlicense
 -->
 
-# sensible-bitvec
+# sensible-arena
 
-See [sensible-bitvec.h](./src/sensible-bitvec.h)
+See [sensible-arena.h](./src/sensible-arena.h)
