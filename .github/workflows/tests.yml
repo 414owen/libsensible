@@ -23,9 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: webiny/action-conventional-commits@v1.1.0
-    - uses: actions/checkout@v2
-    # - run: ./scripts/checks/headers-have-pragmas.sh
-    # - run: ./scripts/licences.sh check
+    - uses: actions/checkout@v4
     - name: REUSE Compliance Check
       uses: fsfe/reuse-action@v2
   Tests:
@@ -34,11 +32,7 @@ jobs:
       checks: write
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    # - uses: awalsh128/cache-apt-pkgs-action@latest
-    #   with:
-    #     packages:
-    #     version: 1.0
+    - uses: actions/checkout@v4
     - run: ./scripts/ci.sh
     - name: Publish Test Report
       uses: mikepenz/action-junit-report@v3
