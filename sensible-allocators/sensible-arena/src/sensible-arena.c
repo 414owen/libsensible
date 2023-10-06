@@ -59,7 +59,7 @@
  */
 
 static
-uintptr_t extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
+uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
   // ptr           = 11010
   // 8             = 01000
   // 8 - 1         = 00111
@@ -77,26 +77,26 @@ uintptr_t extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
 }
 
 static
-size_t extra_fresh_bytes_needed(uintptr_t amount, uintptr_t alignment) {
-  size_t res = extra_bytes_needed(sizeof(struct chunk_header), alignment);
-  if (amount + res < ARENA_MIN_CHUNK_SIZE) return 0;
+size_t senarena_extra_fresh_bytes_needed(uintptr_t amount, uintptr_t alignment) {
+  size_t res = senarena_extra_bytes_needed(sizeof(struct senarena_chunk_header), alignment);
+  if (amount + res < SENARENA_MIN_CHUNK_SIZE) return 0;
   return res;
 }
 
 // Returns a pointer to *after* the chunk_header
 static
-unsigned char *chunk_new(uintptr_t size, struct chunk_header *ptr) {
+unsigned char *senarena_chunk_new(uintptr_t size, struct senarena_chunk_header *ptr) {
   // with size 7 and alignment 8 you'll need 1 more byte if you align up or down
-  struct chunk_header *chunk = (struct chunk_header*) malloc(size + sizeof(struct chunk_header));
+  struct senarena_chunk_header *chunk = (struct senarena_chunk_header*) malloc(size + sizeof(struct senarena_chunk_header));
   chunk->ptr = ptr;
   chunk->capacity = size;
-  return (unsigned char*) chunk + sizeof(struct chunk_header);
+  return (unsigned char*) chunk + sizeof(struct senarena_chunk_header);
 }
 
-struct arena arena_new() {
-  struct arena res = {
-    .size = ARENA_MIN_CHUNK_SIZE,
-    .current = chunk_new(ARENA_MIN_CHUNK_SIZE, NULL),
+struct senarena senarena_new() {
+  struct senarena res = {
+    .size = SENARENA_MIN_CHUNK_SIZE,
+    .current = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, NULL),
     .fresh_chunks = NULL,
   };
   return res;
@@ -104,16 +104,16 @@ struct arena arena_new() {
 
 // O(min(n, m)) where n, m are the sizes of the linked chunk lists a and b
 static
-struct chunk_header *join_chunk_chains(struct chunk_header *a, struct chunk_header *b) {
+struct senarena_chunk_header *senarena_join_chunk_chains(struct senarena_chunk_header *a, struct senarena_chunk_header *b) {
 
   if (a == NULL) return b;
   if (b == NULL) return a;
 
-  struct chunk_header *curr_a = a;
-  struct chunk_header *curr_b = b;
+  struct senarena_chunk_header *curr_a = a;
+  struct senarena_chunk_header *curr_b = b;
 
-  struct chunk_header *next_a = a->ptr;
-  struct chunk_header *next_b = b->ptr;
+  struct senarena_chunk_header *next_a = a->ptr;
+  struct senarena_chunk_header *next_b = b->ptr;
 
   while (next_a != NULL && next_b != NULL) {
     curr_a = next_a;
@@ -131,35 +131,35 @@ struct chunk_header *join_chunk_chains(struct chunk_header *a, struct chunk_head
   }
 }
 
-void arena_clear(struct arena *arena) {
-  struct chunk_header *current = (struct chunk_header*) (arena->current - sizeof(struct chunk_header));
+void senarena_clear(struct senarena *arena) {
+  struct senarena_chunk_header *current = (struct senarena_chunk_header*) (arena->current - sizeof(struct senarena_chunk_header));
   arena->size = current->capacity;
-  arena->fresh_chunks = join_chunk_chains(arena->fresh_chunks, current->ptr);
+  arena->fresh_chunks = senarena_join_chunk_chains(arena->fresh_chunks, current->ptr);
   current->ptr = NULL;
 }
 
-void *arena_alloc(struct arena *arena, size_t amount, size_t alignment) {
+void *senarena_alloc(struct senarena *arena, size_t amount, size_t alignment) {
   assert(alignment > 0);
-  size_t amount_and_padding = amount + extra_bytes_needed((uintptr_t) arena->current + amount, alignment);
+  size_t amount_and_padding = amount + senarena_extra_bytes_needed((uintptr_t) arena->current + amount, alignment);
   if (amount_and_padding > arena->size) {
-    struct chunk_header *current_header = (struct chunk_header*) (arena->current - sizeof(struct chunk_header));
+    struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->current - sizeof(struct senarena_chunk_header));
     // extra bytes needed on a fresh chunk
-    size_t extra_fresh_bytes = extra_fresh_bytes_needed(amount, alignment);
-    if (amount + extra_fresh_bytes >= ARENA_MIN_CHUNK_SIZE >> 2) {
+    size_t extra_fresh_bytes = senarena_extra_fresh_bytes_needed(amount, alignment);
+    if (amount + extra_fresh_bytes >= SENARENA_MIN_CHUNK_SIZE >> 2) {
       // Makes it possible to allocate large objects here.
       // Really, you just shouldn't...
-      unsigned char *res = chunk_new(amount + extra_fresh_bytes, current_header->ptr);
-      current_header->ptr = (struct chunk_header*) (res - sizeof(struct chunk_header));
+      unsigned char *res = senarena_chunk_new(amount + extra_fresh_bytes, current_header->ptr);
+      current_header->ptr = (struct senarena_chunk_header*) (res - sizeof(struct senarena_chunk_header));
       return res + extra_fresh_bytes;
     } else if (arena->fresh_chunks != NULL) {
-      struct chunk_header *next = arena->fresh_chunks;
+      struct senarena_chunk_header *next = arena->fresh_chunks;
       arena->fresh_chunks = next->ptr;
-      next->ptr = (struct chunk_header*) (arena->current - sizeof(struct chunk_header));
+      next->ptr = (struct senarena_chunk_header*) (arena->current - sizeof(struct senarena_chunk_header));
       arena->size = next->capacity;
-      arena->current = (unsigned char*) next + sizeof(struct chunk_header);
+      arena->current = (unsigned char*) next + sizeof(struct senarena_chunk_header);
     } else {
-      arena->current = chunk_new(ARENA_MIN_CHUNK_SIZE, current_header);
-      arena->size = ARENA_MIN_CHUNK_SIZE;
+      arena->current = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, current_header);
+      arena->size = SENARENA_MIN_CHUNK_SIZE;
     }
   }
   arena->size -= amount_and_padding;
@@ -167,16 +167,16 @@ void *arena_alloc(struct arena *arena, size_t amount, size_t alignment) {
 }
 
 static
-void free_chunk_chain(struct chunk_header *current) {
+void senarena_free_chunk_chain(struct senarena_chunk_header *current) {
   while (current) {
-    struct chunk_header *previous = current->ptr;
+    struct senarena_chunk_header *previous = current->ptr;
     free(current);
     current = previous;
   }
 }
 
-void arena_free(struct arena arena) {
-  struct chunk_header *current = (struct chunk_header *) (arena.current - sizeof(struct chunk_header));
-  free_chunk_chain(current);
-  free_chunk_chain(arena.fresh_chunks);
+void senarena_free(struct senarena arena) {
+  struct senarena_chunk_header *current = (struct senarena_chunk_header *) (arena.current - sizeof(struct senarena_chunk_header));
+  senarena_free_chunk_chain(current);
+  senarena_free_chunk_chain(arena.fresh_chunks);
 }
