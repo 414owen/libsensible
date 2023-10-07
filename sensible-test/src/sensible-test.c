@@ -601,7 +601,7 @@ int sentest_finish(struct sentest_state *restrict state) {
   free(state->path_seg_lengths.data);
   free(state->strs.data);
   free(state->str_starts.data);
-  int res = had_failure > 0 ? 1 : 0;
+  int res = had_failure ? 1 : 0;
   fflush(state->config.output);
   free(state);
   return res;
