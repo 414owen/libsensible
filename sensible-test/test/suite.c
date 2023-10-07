@@ -98,7 +98,7 @@ void run_sensible_test_suite(struct sentest_state *state) {
       sentest(state, "writes the output file") {
         output = read_entire_file(state, output_path);
       }
-      if (output == NULL) break;
+      if (output == NULL) continue;
       sentest(state, "prints ticks for passes") {
         sentest_assert_eq(state, count_substrings(output, "✓"), 3);
       }
@@ -113,7 +113,7 @@ void run_sensible_test_suite(struct sentest_state *state) {
       sentest(state, "writes the output file") {
         output = read_entire_file(state, junit_out_path);
       }
-      if (output == NULL) break;
+      if (output == NULL) continue;
       sentest(state, "contains balanced <testsuites>") {
         assert_tags_match(state, output, "testsuites");
       }
@@ -137,7 +137,7 @@ void run_sensible_test_suite(struct sentest_state *state) {
       sentest(state, "writes the output file") {
         output = read_entire_file(state, output_path);
       }
-      if (output == NULL) break;
+      if (output == NULL) continue;
       sentest(state, "prints ticks for passes") {
         sentest_assert_eq(state, count_substrings(output, "✓"), 2);
       }
@@ -151,7 +151,7 @@ void run_sensible_test_suite(struct sentest_state *state) {
       sentest(state, "writes the output file") {
         output = read_entire_file(state, junit_out_path);
       }
-      if (output == NULL) break;
+      if (output == NULL) continue;
       sentest(state, "contains balanced <testsuites>") {
         assert_tags_match(state, output, "testsuites");
       }
