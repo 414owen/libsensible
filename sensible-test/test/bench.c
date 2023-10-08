@@ -15,9 +15,8 @@
 
 static
 void print_llu_underscored(long long unsigned n) {
-  // printf("(%llu)", n);
-  int length = 0;
-  int exp = 1;
+  unsigned long long length = 0;
+  unsigned long long exp = 1;
   {
     int m = n;
     while (m > 0) {
