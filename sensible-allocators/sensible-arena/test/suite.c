@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Unlicense
 
+#include <math.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,6 +12,10 @@
 #include "../../../sensible-test/src/sensible-test.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
+
+int one_in(int n) {
+  return rand() % n == 0;
+}
 
 void run_sensible_arena_suite(struct sentest_state *state) {
   sentest_group(state, "arena") {
@@ -93,29 +98,69 @@ void run_sensible_arena_suite(struct sentest_state *state) {
         senarena_free(arena);
       }
     }
-    sentest(state, "fuzz tests") {
-      size_t in_use = 0;
+    sentest_group(state, "fuzz tests") {
+      const int n = 1;
+
+      unsigned char *numbers = malloc(n * sizeof(unsigned char));
+      size_t *sizes = calloc(n, sizeof(size_t));
+      int *alignments = calloc(n, sizeof(int));
+      volatile unsigned char **pointers = calloc(n, sizeof(int*));
+
       struct senarena arena = senarena_new();
-      for (int i = 0; i < 1000; i++) {
-        if (in_use > SENARENA_MIN_CHUNK_SIZE * 20) {
-          // puts("clearing");
-          senarena_clear(&arena);
+      sentest(state, "can write allocated memory") {
+        for (int i = 0; i < n; i++) {
+          const size_t mod = one_in(10) ? SENARENA_MIN_CHUNK_SIZE * 3 : 257;
+          const size_t size = rand() % mod;
+          sizes[i] = size;
+
+          const size_t alignment = pow(2, rand() % 7); // max 64
+          alignments[i] = alignment;
+
+          volatile unsigned char *buf = senarena_alloc(&arena, size, alignment);
+          pointers[i] = buf;
+
+          // printf("size: %zu, align: %zu\n", size, alignment);
+          const unsigned char number = rand();
+          numbers[i] = number;
+          memset((void*) buf, number, size);
         }
-        switch (rand() % 10) {
-          case 0:
-            // puts("clearing");
-            senarena_clear(&arena);
-            break;
-          default: {
-            size_t size = rand() % SENARENA_MIN_CHUNK_SIZE * 2;
-            size_t alignment = rand() % 15 + 1;
-            // printf("Alocating %zu bytes with %zu padding\n", size, alignment);
-            volatile unsigned char *buf = senarena_alloc(&arena, size, alignment);
-            memset((void*) buf, rand(), size);
-            break;
+      }
+      sentest(state, "memory is correctly aligned") {
+        for (int i = 0; i < n; i++) {
+          volatile unsigned char *pointer = pointers[i];
+          const size_t size = sizes[i];
+          const int alignment = alignments[i];
+          if (size > 0) {
+            const uintptr_t mod = (uintptr_t) pointer % alignment;
+            if (mod != 0) {
+              sentest_failf(state, "ptr %p of size %zu isn't aligned to %d boundary. Off by %p", pointer, size, alignment, mod);
+            }
           }
         }
       }
+      sentest(state, "can read allocated memory") {
+        for (int i = 0; i < n; i++) {
+          const unsigned char number = numbers[i];
+          const size_t size = sizes[i];
+          volatile unsigned char *pointer = pointers[i];
+          bool equal = true;
+          size_t j;
+          for (j = 0; j < size; j++) {
+            // printf("%zu\n", j);
+            if (pointer[j] != number) {
+              equal = false;
+              break;
+            }
+          }
+          if (!equal) {
+            sentest_failf(state, "expected byte %zu to be '0x%x', but found '0x%x'", j, number, pointer[j]);
+          }
+        }
+      }
+      free(numbers);
+      free(sizes);
+      free(alignments);
+      free(pointers);
       senarena_free(arena);
     }
   }
