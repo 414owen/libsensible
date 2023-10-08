@@ -21,7 +21,8 @@ int main(int argc, char **argv) {
     printf("Using given seed: %d\n", seed);
     srand(seed);
   } else {
-    time_t now = time(NULL);
+    clock_t now = time(NULL) + clock();
+    now += time(NULL) + clock();
     printf("Using random seed: %ld\n", now);
     srand(now);
   }
