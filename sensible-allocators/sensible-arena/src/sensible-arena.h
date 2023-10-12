@@ -31,12 +31,12 @@ struct senarena_chunk_header {
 };
 
 struct senarena {
-  // capacity of the current chunk,
-  size_t size;
+  // pointer to the first unfree byte
+  unsigned char *top;
+  // pointer to the current chunk (after the header)
+  unsigned char *bottom;
   // pointer to the next reusable chunk
   struct senarena_chunk_header *fresh_chunks;
-  // pointer to the current chunk (after the header)
-  unsigned char *current;
 };
 
 struct senarena senarena_new();

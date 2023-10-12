@@ -97,9 +97,10 @@ unsigned char *senarena_chunk_new(uintptr_t size, struct senarena_chunk_header *
 }
 
 struct senarena senarena_new() {
+  unsigned char *bottom = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, NULL);
   struct senarena res = {
-    .size = SENARENA_MIN_CHUNK_SIZE,
-    .current = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, NULL),
+    .top = bottom + SENARENA_MIN_CHUNK_SIZE,
+    .bottom = bottom,
     .fresh_chunks = NULL,
   };
   return res;
@@ -135,8 +136,8 @@ struct senarena_chunk_header *senarena_join_chunk_chains(struct senarena_chunk_h
 }
 
 void senarena_clear(struct senarena *arena) {
-  struct senarena_chunk_header *current = (struct senarena_chunk_header*) (arena->current - senarena_chunk_header_size);
-  arena->size = current->capacity;
+  struct senarena_chunk_header *current = (struct senarena_chunk_header*) (arena->bottom - senarena_chunk_header_size);
+  arena->top = (unsigned char*) current + current->capacity + senarena_chunk_header_size;
   arena->fresh_chunks = senarena_join_chunk_chains(arena->fresh_chunks, current->ptr);
   current->ptr = NULL;
 }
@@ -150,14 +151,14 @@ void *senarena_alloc(struct senarena *arena, size_t amount, size_t alignment) {
 #endif
 
   while (true) {
-    size_t amount_and_padding = amount + senarena_extra_bytes_needed((uintptr_t) arena->current + arena->size - amount, alignment);
-
-    if (amount_and_padding > arena->size) {
+    intptr_t amount_and_padding = amount + senarena_extra_bytes_needed((intptr_t) arena->top - amount, alignment);
+    const intptr_t free_space = arena->top - arena->bottom;
+    if (amount_and_padding > free_space) {
       // extra bytes needed on a fresh chunk
       if (amount >= SENARENA_MIN_CHUNK_SIZE >> 2) {
         // Makes it possible to allocate large objects here.
         // Really, you just shouldn't...
-        struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->current - senarena_chunk_header_size);
+        struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->bottom - senarena_chunk_header_size);
         const size_t extra_fresh_bytes = senarena_extra_fresh_bytes_needed(alignment);
         unsigned char *res = senarena_chunk_new(amount + extra_fresh_bytes, current_header->ptr);
         current_header->ptr = (struct senarena_chunk_header*) (res - senarena_chunk_header_size);
@@ -166,19 +167,19 @@ void *senarena_alloc(struct senarena *arena, size_t amount, size_t alignment) {
         if (arena->fresh_chunks != NULL) {
           struct senarena_chunk_header *next = arena->fresh_chunks;
           arena->fresh_chunks = next->ptr;
-          next->ptr = (struct senarena_chunk_header*) (arena->current - senarena_chunk_header_size);
-          arena->size = next->capacity;
-          arena->current = (unsigned char*) next + senarena_chunk_header_size;
+          next->ptr = (struct senarena_chunk_header*) (arena->bottom - senarena_chunk_header_size);
+          arena->top = (unsigned char*)next + senarena_chunk_header_size + next->capacity;
+          arena->bottom = (unsigned char*) next + senarena_chunk_header_size;
           continue;
         } else {
-          struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->current - senarena_chunk_header_size);
-          arena->current = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, current_header);
-          arena->size = SENARENA_MIN_CHUNK_SIZE;
+          struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->bottom - senarena_chunk_header_size);
+          arena->bottom = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, current_header);
+          arena->top = arena->bottom + SENARENA_MIN_CHUNK_SIZE;
         }
       }
     }
-    arena->size -= amount_and_padding;
-    return arena->current + arena->size;
+    arena->top -= amount_and_padding;
+    return arena->top;
   }
 }
 
@@ -192,7 +193,7 @@ void senarena_free_chunk_chain(struct senarena_chunk_header *current) {
 }
 
 void senarena_free(struct senarena arena) {
-  struct senarena_chunk_header *current = (struct senarena_chunk_header *) (arena.current - senarena_chunk_header_size);
+  struct senarena_chunk_header *current = (struct senarena_chunk_header *) (arena.bottom- senarena_chunk_header_size);
   senarena_free_chunk_chain(current);
   senarena_free_chunk_chain(arena.fresh_chunks);
 }

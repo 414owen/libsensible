@@ -62,20 +62,26 @@ void run_sensible_arena_suite(struct sentest_state *state) {
         for (size_t i = 0; i < STATIC_LEN(sizes); i++) {
           const size_t allocation_size = sizes[i];
           struct senarena arena = senarena_new();
-          const size_t capacity = arena.size;
+          const size_t capacity = arena.top - arena.bottom;
           const size_t first_alloc_size = SENARENA_MIN_CHUNK_SIZE - 1000;
-          unsigned char *start_buffer = arena.current;
+          unsigned char *start_buffer = arena.bottom;
           {
             volatile unsigned char *area = senarena_alloc(&arena, first_alloc_size, 1);
             area[50] = 42;
           }
-          sentest_assert_eq_fmt(state, "zu", arena.size, capacity - first_alloc_size);
+          {
+            size_t new_capacity = arena.top - arena.bottom;
+            sentest_assert_eq_fmt(state, "zu", new_capacity, capacity - first_alloc_size);
+          }
           {
             volatile unsigned char *area = senarena_alloc(&arena, allocation_size, 1);
             area[50] = 50;
           }
-          sentest_assert_eq_fmt(state, "zu", arena.size, capacity - first_alloc_size);
-          sentest_assert_eq_fmt(state, "p", arena.current, start_buffer);
+          {
+            size_t new_capacity = arena.top - arena.bottom;
+            sentest_assert_eq_fmt(state, "zu", new_capacity, capacity - first_alloc_size);
+          }
+          sentest_assert_eq_fmt(state, "p", arena.bottom, start_buffer);
           senarena_free(arena);
         }
       }
@@ -84,16 +90,16 @@ void run_sensible_arena_suite(struct sentest_state *state) {
       sentest(state, "reuses the chunk chain") {
         struct senarena arena = senarena_new();
         sentest_assert_eq(state, arena.fresh_chunks, NULL);
-        unsigned char *chunk_data = arena.current;
+        unsigned char *chunk_data = arena.bottom;
         const size_t size = 1024 * 1024;
         // 1MiB
         volatile unsigned char *area = senarena_alloc(&arena, size, 1);
         area[50] = 42;
-        sentest_assert_eq_fmt(state, "zu", arena.size, SENARENA_MIN_CHUNK_SIZE);
-        sentest_assert_eq(state, arena.current, chunk_data);
+        sentest_assert_eq_fmt(state, "zu", arena.top - arena.bottom, SENARENA_MIN_CHUNK_SIZE);
+        sentest_assert_eq(state, arena.bottom, chunk_data);
         sentest_assert_eq(state, arena.fresh_chunks, NULL);
         senarena_clear(&arena);
-        sentest_assert_eq(state, arena.current, chunk_data);
+        sentest_assert_eq(state, arena.bottom, chunk_data);
         sentest_assert_eq_fmt(state, "p", (unsigned char*) arena.fresh_chunks + sizeof(struct senarena_chunk_header), area);
         senarena_free(arena);
       }
