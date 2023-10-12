@@ -55,6 +55,7 @@ int main(void) {
   struct minmax_d arena_free_aggs = {0};
   double arena_alloc_throughput = 0;
   double arena_free_throughput = 0;
+  double time_threshold_seconds = 1.5; // rounds should take at least 1.5s
 
   {
     unsigned long n = 1;
@@ -72,7 +73,7 @@ int main(void) {
         const double end_time = (double)clock()/CLOCKS_PER_SEC;
         seconds = end_time - start_time;
         senarena_free(a1);
-        if (seconds>= 0.5) break;
+        if (seconds >= time_threshold_seconds) break;
         n *= 2;
       }
       printf("%lu arena allocations took %fs\n", n, seconds);
@@ -147,7 +148,7 @@ int main(void) {
           free((void*) ptrs[i]);
         }
         seconds = end_time - start_time;
-        if (seconds >= 0.5) break;
+        if (seconds >= time_threshold_seconds) break;
         n *= 2;
         ptrs = realloc(ptrs, sizeof(int*) * n);
       }
