@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../../../sensible-test/src/sensible-test.h"
 #include "suite.h"
 
 int main(void) {
@@ -21,6 +22,6 @@ int main(void) {
     .junit_output_path = NULL,
   };
   struct sentest_state *state = sentest_start(config);
-  run_sensible_data_structure_suite(state);
+  run_sensible_bitvec_suite(state);
   return sentest_finish(state);
 }

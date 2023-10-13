@@ -2,7 +2,11 @@
 //
 // SPDX-License-Identifier: Unlicense
 
+#include <stdbool.h>
+#include <stdio.h>
+
 #include "suite.h"
+#include "../src/sensible-test.h"
 
 int main(void) {
   struct sentest_config config = {

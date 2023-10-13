@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include "../../../sensible-test/src/sensible-test.h"
 #include "suite.h"
 
 int main(void) {
