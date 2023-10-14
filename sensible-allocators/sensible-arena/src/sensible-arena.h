@@ -68,19 +68,7 @@ uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
   // 8             = 01000
   // 8 - 1         = 00111
   // ptr & (8 - 1) = 00010
-  alignment -= 1;
-  ptr &= alignment;
-  return ptr;
-}
-
-static const size_t senarena_chunk_header_size = sizeof(struct senarena_chunk_header);
-
-// this is only called when a chunk is being allocated specifically for one
-// allocation.
-static
-size_t senarena_extra_fresh_bytes_needed(uintptr_t alignment) {
-  uintptr_t start = alignment > senarena_chunk_header_size ? alignment - senarena_chunk_header_size : senarena_chunk_header_size;
-  return senarena_extra_bytes_needed(start, alignment);
+  return ptr & (alignment - 1);
 }
 
 #ifndef SENARENA_IMPL
@@ -90,12 +78,15 @@ void *senarena_alloc(struct senarena *arena, size_t amount, size_t alignment) {
   assert(alignment > 0);
 
 #ifndef NDEBUG
-  bool alignmentPowerOfTwo = !(alignment == 0) && !(alignment & (alignment - 1));
-  assert(alignmentPowerOfTwo);
+  {
+    const bool alignmentPowerOfTwo = !(alignment == 0) && !(alignment & (alignment - 1));
+    assert(alignmentPowerOfTwo);
+  }
 #endif
 
-  intptr_t amount_and_padding = amount + senarena_extra_bytes_needed((intptr_t) arena->top - amount, alignment);
-  const intptr_t free_space = arena->top - arena->bottom;
+  const size_t amount_and_padding = amount + senarena_extra_bytes_needed((uintptr_t) arena->top - amount, alignment);
+  // the invariant that top > bottom is maintained by us
+  const size_t free_space = arena->top - arena->bottom;
   if (amount_and_padding > free_space) {
     return senarena_alloc_more(arena, amount, alignment);
   }
@@ -104,5 +95,4 @@ void *senarena_alloc(struct senarena *arena, size_t amount, size_t alignment) {
 }
 
 #endif
-
 #endif
