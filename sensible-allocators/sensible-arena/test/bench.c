@@ -7,6 +7,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "../../../sensible-test/src/sensible-test.h"
 #include "../../../sensible-timing/src/sensible-timing.h"
@@ -17,6 +18,16 @@
 static const double time_threshold_nanos = 2e8; // rounds should take at least 0.2s
 static const int num_iters = 10;
 static const int ints_to_allocate = 2;
+
+#ifdef WIN32
+bool stdout_is_tty(void) {
+  return _isatty(_fileno(stdout));
+}
+#else
+bool stdout_is_tty(void) {
+  return isatty(fileno(stdout));
+}
+#endif
 
 struct minmax_d {
   uint64_t min;
@@ -45,8 +56,10 @@ unsigned long determine_arena_alloc_amt(void) {
   unsigned long num_allocations = 2 << 10; // 1024
   uint64_t nanos = 0;
   while (true) {
-    printf("\rincreasing allocations: %lu", num_allocations);
-    fflush(stdout);
+    if (stdout_is_tty()) {
+      printf("\rincreasing allocations: %lu", num_allocations);
+      fflush(stdout);
+    }
     struct senarena a1 = senarena_new();
     const struct seninstant begin = seninstant_now();
     for (unsigned long i = 0; i < num_allocations; i++) {
@@ -59,14 +72,18 @@ unsigned long determine_arena_alloc_amt(void) {
     num_allocations *= 2;
   }
 
-  putchar('\n');
+  if (stdout_is_tty()) {
+    putchar('\n');
+  }
 
   const int reduction_steps = 5;
   for (int j = 0; j < reduction_steps; j++) {
     while (true) {
       const unsigned long m = num_allocations - num_allocations / (1 << (j + 1));
-      printf("\rreducing %d/%d %lu", j + 1, reduction_steps, m);
-      fflush(stdout);
+      if (stdout_is_tty()) {
+        printf("\rreducing %d/%d %lu", j + 1, reduction_steps, m);
+        fflush(stdout);
+      }
       struct senarena a1 = senarena_new();
       const struct seninstant begin = seninstant_now();
       for (unsigned long i = 0; i < m; i++) {
@@ -82,7 +99,9 @@ unsigned long determine_arena_alloc_amt(void) {
       nanos = red_nanos;
     }
   }
-  putchar('\n');
+  if (stdout_is_tty()) {
+    putchar('\n');
+  }
   printf("%lu arena allocations took %.3fs\n", num_allocations, ns_to_s(nanos));
   return num_allocations;
 }
@@ -96,8 +115,10 @@ unsigned long determine_standard_alloc_amt(void) {
   volatile int **ptrs = malloc(sizeof(int*) * num_allocations);
   uint64_t nanos = 0;
   while (true) {
-    printf("\rincreasing allocations: %lu", num_allocations);
-    fflush(stdout);
+    if (stdout_is_tty()) {
+      printf("\rincreasing allocations: %lu", num_allocations);
+      fflush(stdout);
+    }
     const struct seninstant begin = seninstant_now();
     for (unsigned long i = 0; i < num_allocations; i++) {
       volatile int *ints = malloc(sizeof(int) * ints_to_allocate);
@@ -114,14 +135,18 @@ unsigned long determine_standard_alloc_amt(void) {
     ptrs = realloc(ptrs, sizeof(int*) * num_allocations);
   }
 
-  putchar('\n');
+  if (stdout_is_tty()) {
+    putchar('\n');
+  }
 
   const int reduction_steps = 5;
   for (int j = 0; j < reduction_steps; j++) {
     while (true) {
       const unsigned long m = num_allocations - num_allocations / (1 << (j + 1));
-      printf("\rreducing %d/%d %lu", j + 1, reduction_steps, m);
-      fflush(stdout);
+      if (stdout_is_tty()) {
+        printf("\rreducing %d/%d %lu", j + 1, reduction_steps, m);
+        fflush(stdout);
+      }
       const struct seninstant begin = seninstant_now();
       for (unsigned long i = 0; i < m; i++) {
         volatile int *ints = malloc(sizeof(int) * ints_to_allocate);
@@ -139,7 +164,9 @@ unsigned long determine_standard_alloc_amt(void) {
       nanos = red_nanos;
     }
   }
-  putchar('\n');
+  if (stdout_is_tty()) {
+    putchar('\n');
+  }
   printf("%lu arena allocations took %.3fs\n", num_allocations, ns_to_s(nanos));
   free((void*) ptrs);
   return num_allocations;
@@ -147,7 +174,9 @@ unsigned long determine_standard_alloc_amt(void) {
 
 static
 void clearln(void) {
-  puts("\33[2K");
+  if (stdout_is_tty()) {
+    puts("\33[2K");
+  }
 }
 
 int main(void) {
@@ -166,8 +195,10 @@ int main(void) {
     struct senarena arena;
 
     for (int j = 0; j < num_iters; j++) {
-      printf("\r%d/%d (a)", j + 1, num_iters);
-      fflush(stdout);
+      if (stdout_is_tty()) {
+        printf("\r%d/%d (a)", j + 1, num_iters);
+        fflush(stdout);
+      }
       arena = senarena_new();
       {
         const struct seninstant begin = seninstant_now();
@@ -186,11 +217,16 @@ int main(void) {
       }
 
       if (j == num_iters - 1) {
-        puts("\r# Benchmarking arena reuse");
+        if (stdout_is_tty()) {
+          putchar('\r');
+        }
+        puts("# Benchmarking arena reuse");
 
         for (int k = 0; k < num_iters; k++) {
-          printf("\r%d/%d (r)", k + 1, num_iters);
-          fflush(stdout);
+          if (stdout_is_tty()) {
+            printf("\r%d/%d (r)", k + 1, num_iters);
+            fflush(stdout);
+          }
           senarena_clear(&arena);
           {
             const struct seninstant begin = seninstant_now();
@@ -210,8 +246,10 @@ int main(void) {
         }
       }
 
-      printf("\r%d/%d (f)", j + 1, num_iters);
-      fflush(stdout);
+      if (stdout_is_tty()) {
+        printf("\r%d/%d (f)", j + 1, num_iters);
+        fflush(stdout);
+      }
 
       const struct seninstant begin = seninstant_now();
       senarena_free(arena);
@@ -250,7 +288,7 @@ int main(void) {
   }
 
   clearln();
-  puts("# Benchmarking malloc use\n");
+  puts("# Benchmarking malloc use");
 
   double std_alloc_throughput = 0;
   double std_free_throughput = 0;
@@ -262,8 +300,10 @@ int main(void) {
     volatile int **ptrs = malloc(sizeof(int*) * num_standard_allocations);
 
     for (int j = 0; j < num_iters; j++) {
-      printf("\r%d/%d (a)", j + 1, num_iters);
-      fflush(stdout);
+      if (stdout_is_tty()) {
+        printf("\r%d/%d (a)", j + 1, num_iters);
+        fflush(stdout);
+      }
       {
         const struct seninstant begin = seninstant_now();
         for (unsigned long i = 0; i < num_standard_allocations; i++) {
@@ -283,8 +323,10 @@ int main(void) {
         }
       }
 
-      printf("\r%d/%d (f)", j + 1, num_iters);
-      fflush(stdout);
+      if (stdout_is_tty()) {
+        printf("\r%d/%d (f)", j + 1, num_iters);
+        fflush(stdout);
+      }
 
       {
         const struct seninstant begin = seninstant_now();
@@ -302,7 +344,7 @@ int main(void) {
       }
     }
     free(ptrs);
-    putchar('\r');
+    clearln();
     {
       double min_time = ns_to_s(std_alloc_aggs.min);
       double max_time = ns_to_s(std_alloc_aggs.max);
