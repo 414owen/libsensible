@@ -15,8 +15,8 @@
 #define SENARENA_INLINE
 #include "../src/sensible-arena.h"
 
-static const double time_threshold_nanos = 2e8; // rounds should take at least 0.2s
-static const int num_iters = 10;
+static const double time_threshold_nanos = 5e8; // rounds should take at least 0.2s
+static const int num_iters = 20;
 static const int ints_to_allocate = 2;
 
 #ifdef WIN32
