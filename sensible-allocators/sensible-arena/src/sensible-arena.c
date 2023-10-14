@@ -7,7 +7,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#define SENARENA_INLINE
+#define SENARENA_IMPL
 #include "sensible-arena.h"
+#undef SENARENA_IMPL
+#undef SENARENA_INLINE
 
 // This basically acts like a zipper, where `new` chunks are
 // reusable, and `old` chunks are full
@@ -57,34 +61,6 @@
  *    \--> NULL
  *
  */
-
-static
-uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
-  // ptr           = 11010
-  // 8             = 01000
-  // 8 - 1         = 00111
-  // ptr & (8 - 1) = 00010
-
-  // Also works if alignment > ptr, because 0 is always aligned:
-
-  // ptr           = 00010
-  // 8             = 01000
-  // 8 - 1         = 00111
-  // ptr & (8 - 1) = 00010
-  alignment -= 1;
-  ptr &= alignment;
-  return ptr;
-}
-
-static const size_t senarena_chunk_header_size = sizeof(struct senarena_chunk_header);
-
-// this is only called when a chunk is being allocated specifically for one
-// allocation.
-static inline
-size_t senarena_extra_fresh_bytes_needed(uintptr_t alignment) {
-  uintptr_t start = alignment > senarena_chunk_header_size ? alignment - senarena_chunk_header_size : senarena_chunk_header_size;
-  return senarena_extra_bytes_needed(start, alignment);
-}
 
 // Returns a pointer to *after* the chunk_header
 static
@@ -142,14 +118,7 @@ void senarena_clear(struct senarena *arena) {
   current->ptr = NULL;
 }
 
-void *senarena_alloc(struct senarena *arena, size_t amount, size_t alignment) {
-  assert(alignment > 0);
-
-#ifndef NDEBUG
-  bool alignmentPowerOfTwo = !(alignment == 0) && !(alignment & (alignment - 1));
-  assert(alignmentPowerOfTwo);
-#endif
-
+void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignment) {
   while (true) {
     intptr_t amount_and_padding = amount + senarena_extra_bytes_needed((intptr_t) arena->top - amount, alignment);
     const intptr_t free_space = arena->top - arena->bottom;
