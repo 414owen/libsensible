@@ -2,6 +2,13 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
+#ifndef SENSIBLE_TIMING_H
+#define SENSIBLE_TIMING_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(WIN32)
 
 #include <stdint.h>
@@ -26,3 +33,9 @@ struct seninstant {
 
 struct seninstant seninstant_now(void);
 uint64_t seninstant_subtract(struct seninstant end, struct seninstant begin);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

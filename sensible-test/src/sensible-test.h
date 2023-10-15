@@ -2,7 +2,12 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-#pragma once
+#ifndef SENSIBLE_TEST_H
+#define SENSIBLE_TEST_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -60,5 +65,10 @@ void sentest_failf_internal(struct sentest_state *state, const char *file, size_
 bool sentest_assert_eq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
 bool sentest_assert_neq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
 
-
 int sentest_finish(struct sentest_state *state);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

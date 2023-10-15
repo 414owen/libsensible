@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
-#ifndef ARENA_H
-#define ARENA_H
+#ifndef SENSIBLE_ARENA_H
+#define SENSIBLE_ARENA_H
 
 #ifdef __cplusplus
 extern "C" {
