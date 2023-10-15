@@ -2,11 +2,16 @@
 #
 # SPDX-License-Identifier: Unlicense
 
+add_executable(${PROJECT_NAME}-arena-example example.c)
+target_link_libraries(
+  ${PROJECT_NAME}-arena-example
+  ${PROJECT_NAME}-arena
+)
+
 add_executable(${PROJECT_NAME}-arena-bench-exe bench.c)
 target_link_libraries(
   ${PROJECT_NAME}-arena-bench-exe
   ${PROJECT_NAME}-arena
-  ${PROJECT_NAME}-test
   ${PROJECT_NAME}-timing
 )
 
