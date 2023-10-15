@@ -42,32 +42,41 @@ void *senarena_alloc_array_of(struct senarena *arena, type, amount);
 
 ### Methodology:
 
-A number (n) of 8 byte arena allocations that takes more than 0.5s is determined.
-A number (m) of 8 byte arena allocations that takes more than 0.5s is determined.
+A number (n) of 8 byte arena_alloc()s that takes more than 0.5s is determined empirically.  
+A number (m) of 8 byte malloc()s that takes more than 0.5s is determined empirically.
 
-In 20 rounds:
-We arena_alloc() 8 bytes n times in a fresh arena.
-we arena_free() the arena.
-We arena_alloc() 8 bytes n times in a reused arena.
-We malloc() 8 bytes m times.
-We free() all malloced allocations.
+Over 20 rounds:
 
-The best round time for each operation is taken, throughput is calculated, and
-used for the relative comparison.
+* We arena_alloc() 8 bytes n times in a fresh arena.
+* We arena_free() the arena.
+* We arena_alloc() 8 bytes n times in a reused arena.
+* We malloc() 8 bytes m times.
+* We free() all malloced allocations.
+
+The time for each operation is taken from its best round,
+throughput is calculated, and used for the relative comparison.
 
 All times are monotonic durations, which include user-space time *and*
 time spent in the kernel.
 
-Speedup is a speedup in throughput as defined in this [wikipedia article](https://en.wikipedia.org/wiki/Speedup#Speedup_in_throughput) as `Q₂/Q₁` (higher is better).
+Speedup is a speedup in throughput (allocations per unit of time) as
+defined as `Q₂/Q₁` where:
+
+* `Q₂` is the arena throughput
+* `Q₁` is malloc's throughput
+
+For more information see [wikipedia article](https://en.wikipedia.org/wiki/Speedup#Speedup_in_throughput).
 
 ### AMD Ryzen 5 5625U
 
-| speedup         | alloc  | reused arena alloc | free    |
-| ---             | ---    | ---                | ---     |
-| glibc           | 7.204  | 12.469             | 1.609   |
-| tcmalloc 4.5.10 | 3.127  | 3.335              | 111.753 |
-| mimalloc 2.1.2  | 1.683  | 3.440              | 61.997  |
-| jemalloc 5.3.0  | 2.870  | 7.049              | 16.545  |
+This table measures speedup in throughput of using sensible-arena to allocate,
+compared to various malloc implementations.
+
+| speedup                      | glibc  | tcmalloc | mimalloc | jemalloc |
+| ---                          | ---    | ---      | ---            | ---            |
+| arena_alloc()                | 7.204  | 3.127    | 1.683          | 2.870          |
+| arena_alloc() (reused arena) | 12.469 | 3.335    | 3.440          | 7.049          |
+| arena_free()                 | 1.609  | 111.753  | 61.997         | 16.545         |
 
 <details>
 <summary>Benchmark machine details</summary>
@@ -77,14 +86,19 @@ $ uname -a
 Linux nixos 6.1.55 #1-NixOS SMP PREEMPT_DYNAMIC Sat Sep 23 09:11:13 UTC 2023 x86_64 GNU/Linux
 ```
 
-All malloc implementations are the versions provided by Nixpkgs (23.05, 3b79cc4bcd9c09b5aa68ea1957c25e437dc6bc58).
+**glibc** version: 2.37  
+**tcmalloc** version: 4.5.10  
+**mimalloc** version: 2.1.2  
+**jemalloc** version: 5.3.0  
+
+All malloc implementations are the versions provided by [Nixpkgs](https://github.com/NixOS/nixpkgs) (23.05, [3b79cc4bcd9c09b5aa68ea1957c25e437dc6bc58](https://github.com/NixOS/nixpkgs/tree/3b79cc4bcd9c09b5aa68ea1957c25e437dc6bc58)).
 
 </details>
 
 <details>
 <summary>Full benchmark output</summary>
 
-#### glibc
+#### glibc 2.37
 
 ```
 Arena allocation time:             0.421s (min), 0.430s (max)
@@ -244,11 +258,14 @@ or 6 instructions if your alignment happens to be 1.
 
 ### Raspberry pi zero v1.1
 
-| speedup         | alloc  | reused arena alloc | free    |
-| ---             | ---    | ---                | ---     |
-| glibc           | 20.101 | 43.832             | 4.492   |
-| tcmalloc 4.5.10 | 10.993 | 12.141             | 130.952 |
-| jemalloc 5.2.1  | 8.447  | 21.253             | 51.101  |
+This table measures speedup in throughput of using sensible-arena to allocate,
+compared to various malloc implementations.
+
+| speedup                      | glibc  | tcmalloc | jemalloc |
+| ---                          | ---    | ---      | ---      |
+| arena_alloc()                | 20.101 | 10.993   | 8.447    |
+| arena_alloc() (reused arena) | 43.832 | 12.141   | 21.253   |
+| arena_free()                 | 4.492  | 130.952  | 51.101   |
 
 <details>
 <summary>Benchmark machine details</summary>
@@ -257,6 +274,11 @@ or 6 instructions if your alignment happens to be 1.
 $ uname -a
 Linux dietpi 6.1.21+ #1642 Mon Apr  3 17:19:14 BST 2023 armv6l GNU/Linux
 ```
+
+**glibc** version: 6
+**tcmalloc** version: 4.5.10  
+**jemalloc** version: 5.2.1  
+
 
 All malloc implementations were installed from the Debian repositories.
 
