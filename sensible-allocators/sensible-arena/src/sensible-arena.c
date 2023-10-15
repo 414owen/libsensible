@@ -85,9 +85,10 @@ struct senarena senarena_new() {
 // O(min(n, m)) where n, m are the sizes of the linked chunk lists a and b
 static
 struct senarena_chunk_header *senarena_join_chunk_chains(struct senarena_chunk_header *a, struct senarena_chunk_header *b) {
+  // a is free chunks, b is old chunks
 
-  if (a == NULL) return b;
-  if (b == NULL) return a;
+  if senarena_likely(a == NULL) return b;
+  if senarena_likely(b == NULL) return a;
 
   struct senarena_chunk_header *curr_a = a;
   struct senarena_chunk_header *curr_b = b;
@@ -102,7 +103,7 @@ struct senarena_chunk_header *senarena_join_chunk_chains(struct senarena_chunk_h
     next_b = curr_b->ptr;
   }
 
-  if (next_a == NULL) {
+  if senarena_likely(next_a == NULL) {
     curr_a->ptr = b;
     return a;
   } else {
@@ -127,12 +128,15 @@ size_t senarena_extra_fresh_bytes_needed(uintptr_t alignment) {
 }
 
 void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignment) {
-  while (true) {
+  // true is... quite likely
+  while senarena_likely(true) {
     intptr_t amount_and_padding = amount + senarena_extra_bytes_needed((intptr_t) arena->top - amount, alignment);
     const intptr_t free_space = arena->top - arena->bottom;
-    if (amount_and_padding > free_space) {
+    // likely because if we reach here, it'll be true *at least* once
+    if senarena_likely(amount_and_padding > free_space) {
       // extra bytes needed on a fresh chunk
-      if (amount >= SENARENA_DEFAULT_CHUNK_SIZE >> 2) {
+      // unlikely, because we want to optimize for smaller allocations
+      if senarena_unlikely(amount >= SENARENA_DEFAULT_CHUNK_SIZE >> 2) {
         // Makes it possible to allocate large objects here.
         // Really, you just shouldn't...
         struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->bottom - SENARENA_CHUNK_HEADER_SIZE);
@@ -141,7 +145,8 @@ void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignmen
         current_header->ptr = (struct senarena_chunk_header*) (res - SENARENA_CHUNK_HEADER_SIZE);
         return res + extra_fresh_bytes;
       } else {
-        if (arena->fresh_chunks != NULL) {
+        // I don't know if this (unlikely) is a good tradeoff
+        if senarena_unlikely(arena->fresh_chunks != NULL) {
           struct senarena_chunk_header *next = arena->fresh_chunks;
           arena->fresh_chunks = next->ptr;
           next->ptr = (struct senarena_chunk_header*) (arena->bottom - SENARENA_CHUNK_HEADER_SIZE);
