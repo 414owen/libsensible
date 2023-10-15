@@ -177,6 +177,69 @@ and for this allocation size.
 * glibc is far faster at freeing small allocations (8b) than large ones (4096b)
 * Modern tcmalloc and mimalloc are both incredibly fast
 
+I stepped though mimalloc, the first allocation took 6583 instructions.
+The second took 15 (excluding some function call overhead), two of which
+were conditional jumps, a `ja`, and a `je`. This is explained in more detail
+in this [mimalloc paper](https://www.microsoft.com/en-us/research/uploads/prod/2019/06/mimalloc-tr-v1.pdf).
+
+Here it is:
+
+```
+<__libc_malloc>:
+  mov    rax,QWORD PTR [rip+0x1c299]
+  mov    rsi,rdi
+  mov    rdi,QWORD PTR fs:[rax]
+  cmp    rsi,0x400                      # allocating more than 1024 bytes?
+  ja     <__libc_malloc+0x40>           # no!
+  lea    rax,[rsi+0x7]                  # rax is 8(bytes) + 7 = 15
+  shr    rax,0x3                        # rax is 1
+  mov    rax,QWORD PTR [rdi+rax*8+0x8]  # rax = page (for size?)
+                                        # _mi_page_malloc() inlined
+  mov    rdx,QWORD PTR [rax+0x10]       # rdx = page->block
+  test   rdx,rdx                        # is page->block NULL?
+  je     <__libc_malloc+0x50>
+  mov    rcx,QWORD PTR [rdx]
+  add    DWORD PTR [rax+0x18],0x1       # page->used++ ("pop from the free list")
+  mov    QWORD PTR [rax+0x10],rcx       # page->free = mi_block_next(page, block)
+  mov    rax,rdx
+  ret
+```
+
+Our fast path is this:
+
+For alignment 1:
+
+```
+  mov    rax,QWORD PTR [rsp]
+  mov    rdx,rax
+  sub    rdx,QWORD PTR [rsp+0x8]
+  sub    rax,0x3
+  cmp    rdx,0x2
+  jbe    <main+0x51>
+  # rax now contains the pointer
+```
+
+For other alignments:
+
+```
+  mov    rax,QWORD PTR [rsp]
+  mov    rdx,rax
+  mov    rsi,rax
+  sub    rsi,QWORD PTR [rsp+0x8]
+  and    edx,0x3
+  lea    rcx,[rdx+0x4]
+  cmp    rsi,rcx
+  jb     <main+0x85>
+  sub    rax,rdx
+  sub    rax,0x4
+  mov    QWORD PTR [rsp],rax
+  sub    rsp,0x20
+  # rax now contains the pointer
+```
+
+Which comes in at 12 (inlined) instructions, one of which is a conditional jump,
+or 6 instructions if your alignment happens to be 1.
+
 </details>
 
 ### Raspberry pi zero v1.1
