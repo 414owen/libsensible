@@ -7,11 +7,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define SENARENA_INLINE
 #define SENARENA_IMPL
 #include "sensible-arena.h"
 #undef SENARENA_IMPL
-#undef SENARENA_INLINE
 
 #define SENARENA_CHUNK_HEADER_SIZE sizeof(struct senarena_chunk_header)
 
@@ -75,9 +73,9 @@ unsigned char *senarena_chunk_new(uintptr_t size, struct senarena_chunk_header *
 }
 
 struct senarena senarena_new() {
-  unsigned char *bottom = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, NULL);
+  unsigned char *bottom = senarena_chunk_new(SENARENA_DEFAULT_CHUNK_SIZE, NULL);
   struct senarena res = {
-    .top = bottom + SENARENA_MIN_CHUNK_SIZE,
+    .top = bottom + SENARENA_DEFAULT_CHUNK_SIZE,
     .bottom = bottom,
     .fresh_chunks = NULL,
   };
@@ -134,7 +132,7 @@ void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignmen
     const intptr_t free_space = arena->top - arena->bottom;
     if (amount_and_padding > free_space) {
       // extra bytes needed on a fresh chunk
-      if (amount >= SENARENA_MIN_CHUNK_SIZE >> 2) {
+      if (amount >= SENARENA_DEFAULT_CHUNK_SIZE >> 2) {
         // Makes it possible to allocate large objects here.
         // Really, you just shouldn't...
         struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->bottom - SENARENA_CHUNK_HEADER_SIZE);
@@ -152,8 +150,8 @@ void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignmen
           continue;
         } else {
           struct senarena_chunk_header *current_header = (struct senarena_chunk_header*) (arena->bottom - SENARENA_CHUNK_HEADER_SIZE);
-          arena->bottom = senarena_chunk_new(SENARENA_MIN_CHUNK_SIZE, current_header);
-          arena->top = arena->bottom + SENARENA_MIN_CHUNK_SIZE;
+          arena->bottom = senarena_chunk_new(SENARENA_DEFAULT_CHUNK_SIZE, current_header);
+          arena->top = arena->bottom + SENARENA_DEFAULT_CHUNK_SIZE;
         }
       }
     }

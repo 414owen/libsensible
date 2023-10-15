@@ -58,12 +58,12 @@ void run_sensible_arena_suite(struct sentest_state *state) {
     }
     sentest_group(state, "when allocating large chunks") {
       sentest(state, "leaves the current chunk available") {
-        static const size_t sizes[] = {SENARENA_MIN_CHUNK_SIZE, 1 + (SENARENA_MIN_CHUNK_SIZE >> 2)};
+        static const size_t sizes[] = {SENARENA_DEFAULT_CHUNK_SIZE, 1 + (SENARENA_DEFAULT_CHUNK_SIZE >> 2)};
         for (size_t i = 0; i < STATIC_LEN(sizes); i++) {
           const size_t allocation_size = sizes[i];
           struct senarena arena = senarena_new();
           const size_t capacity = arena.top - arena.bottom;
-          const size_t first_alloc_size = SENARENA_MIN_CHUNK_SIZE - 1000;
+          const size_t first_alloc_size = SENARENA_DEFAULT_CHUNK_SIZE - 1000;
           unsigned char *start_buffer = arena.bottom;
           {
             volatile unsigned char *area = senarena_alloc(&arena, first_alloc_size, 1);
@@ -95,7 +95,7 @@ void run_sensible_arena_suite(struct sentest_state *state) {
         // 1MiB
         volatile unsigned char *area = senarena_alloc(&arena, size, 1);
         area[50] = 42;
-        sentest_assert_eq_fmt(state, "zu", arena.top - arena.bottom, SENARENA_MIN_CHUNK_SIZE);
+        sentest_assert_eq_fmt(state, "zu", arena.top - arena.bottom, SENARENA_DEFAULT_CHUNK_SIZE);
         sentest_assert_eq(state, arena.bottom, chunk_data);
         sentest_assert_eq(state, arena.fresh_chunks, NULL);
         senarena_clear(&arena);
@@ -115,7 +115,7 @@ void run_sensible_arena_suite(struct sentest_state *state) {
       struct senarena arena = senarena_new();
       sentest(state, "can write allocated memory") {
         for (int i = 0; i < n; i++) {
-          const size_t mod = one_in(10) ? SENARENA_MIN_CHUNK_SIZE * 3 : 257;
+          const size_t mod = one_in(10) ? SENARENA_DEFAULT_CHUNK_SIZE * 3 : 257;
           const size_t size = rand() % mod;
           sizes[i] = size;
 

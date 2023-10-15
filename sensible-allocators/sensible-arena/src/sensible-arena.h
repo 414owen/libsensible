@@ -13,6 +13,10 @@
 // Frees everything at once.
 // Can reuse space.
 
+#ifndef SENARENA_DEFAULT_CHUNK_SIZE
+# define SENARENA_DEFAULT_CHUNK_SIZE (4 * 1024 - sizeof(struct senarena_chunk_header))
+#endif
+
 #define SENARENA_MIN(a, b) ((a) <= (b) ? (a) : (b))
 
 #define SENARENA_SIMPLE_ALIGNOF(t) (sizeof(t) <= 1 ? 1 : offsetof(struct { char c; t x; }, x))
@@ -20,10 +24,6 @@
 // presumes alignment is a power of 2
 #define SENARENA_ALIGN_DOWN(addr, alignment) ((addr) & -((uintptr_t) alignment))
 #define SENARENA_ALIGNOF(t) SENARENA_MIN(sizeof(t), SENARENA_SIMPLE_ALIGNOF(t))
-
-// This has to be a power of two, so that our
-// alignment calculations work. See 'extra_fresh_bytes'.
-#define SENARENA_MIN_CHUNK_SIZE (4 * 1024 - sizeof(struct senarena_chunk_header))
 
 struct senarena_chunk_header {
   struct senarena_chunk_header *ptr;
@@ -41,7 +41,7 @@ struct senarena {
 
 struct senarena senarena_new();
 
-#if !defined(SENARENA_INLINE)
+#if defined(SENARENA_NOINLINE) && !defined(SENARENA_IMPL)
 void *senarena_alloc(struct senarena *arena, size_t byte_amount, size_t alignment);
 #endif
 void senarena_clear(struct senarena *arena);
@@ -51,9 +51,10 @@ void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignmen
 #define senarena_alloc_type(arena, type) senarena_alloc((arena), sizeof(type), SENARENA_ALIGNOF(type))
 #define senarena_alloc_array_of(arena, type, amount) senarena_alloc(arena, sizeof(type) * amount, SENARENA_ALIGNOF(type))
 
-#ifdef SENARENA_INLINE
+#if defined(SENARENA_IMPL) || !defined(SENARENA_NOINLINE)
 
 #include <assert.h>
+#include <stdbool.h>
 
 static
 uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {

@@ -11,8 +11,6 @@
 
 #include "../../../sensible-test/src/sensible-test.h"
 #include "../../../sensible-timing/src/sensible-timing.h"
-
-#define SENARENA_INLINE
 #include "../src/sensible-arena.h"
 
 static const double time_threshold_nanos = 5e8; // rounds should take at least 0.2s
