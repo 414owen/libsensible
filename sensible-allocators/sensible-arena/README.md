@@ -62,13 +62,12 @@ Speedup is a speedup in throughput as defined in this [wikipedia article](https:
 
 ### AMD Ryzen 5 5625U
 
-
 | speedup         | alloc  | reused arena alloc | free    |
 | ---             | ---    | ---                | ---     |
-| glibc           | 7.343  | 12.578             | 1.698   |
-| tcmalloc 4.5.10 | 1.899  | 1.981              | 113.738 |
-| mimalloc 2.1.2  | 1.746  | 3.451              | 87.177  |
-| jemalloc 5.3.0  | 2.840  | 6.297              | 9.895   |
+| glibc           | 7.204  | 12.469             | 1.609   |
+| tcmalloc 4.5.10 | 3.127  | 3.335              | 111.753 |
+| mimalloc 2.1.2  | 1.683  | 3.440              | 61.997  |
+| jemalloc 5.3.0  | 2.870  | 7.049              | 16.545  |
 
 <details>
 <summary>Benchmark machine details</summary>
@@ -88,81 +87,81 @@ All malloc implementations are the versions provided by Nixpkgs (23.05, 3b79cc4b
 #### glibc
 
 ```
-Arena allocation time:             0.417s (min), 0.425s (max)
-Arena (reused) allocation time:    0.173s (min), 0.248s (max)
-Arena free time:                   0.612s (min), 0.652s (max)
-Arena allocations per us:          355.381
-Arena (reused) allocations per us: 608.771
-Arena allocation frees per us:     231.506
+Arena allocation time:             0.421s (min), 0.430s (max)
+Arena (reused) allocation time:    0.170s (min), 0.248s (max)
+Arena free time:                   0.614s (min), 0.651s (max)
+Arena allocations per us:          358.785
+Arena (reused) allocations per us: 621.036
+Arena allocation frees per us:     236.842
 
-Standard allocation time:         0.194s (min), 0.693s (max)
-Standard free time:               0.230s (min), 0.246s (max)
-Standard allocations per us:      48.400
-Standard allocation frees per us: 136.378
+Standard allocation time:         0.185s (min), 0.674s (max)
+Standard free time:               0.212s (min), 0.228s (max)
+Standard allocations per us:      49.805
+Standard allocation frees per us: 147.229
 
-         arena_alloc() vs malloc() speedup: 7.343
-(reused) arena_alloc() vs malloc() speedup: 12.578
-          arena_free() vs   free() speedup: 1.698
+         arena_alloc() vs malloc() speedup: 7.204
+(reused) arena_alloc() vs malloc() speedup: 12.469
+          arena_free() vs   free() speedup: 1.609
 ```
 
 #### tcmalloc 4.5.10
 
 ```
-Arena allocation time:             0.531s (min), 0.543s (max)
-Arena (reused) allocation time:    0.464s (min), 0.520s (max)
-Arena free time:                   0.010s (min), 0.015s (max)
-Arena allocations per us:          326.336
-Arena (reused) allocations per us: 340.454
-Arena allocation frees per us:     12111.735
+Arena allocation time:             0.430s (min), 0.441s (max)
+Arena (reused) allocation time:    0.294s (min), 0.413s (max)
+Arena free time:                   0.017s (min), 0.021s (max)
+Arena allocations per us:          608.793
+Arena (reused) allocations per us: 649.283
+Arena allocation frees per us:     13073.448
 
-Standard allocation time:         0.504s (min), 0.549s (max)
-Standard free time:               0.872s (min), 0.886s (max)
-Standard allocations per us:      171.841
-Standard allocation frees per us: 106.488
+Standard allocation time:         0.490s (min), 0.517s (max)
+Standard free time:               0.851s (min), 0.860s (max)
+Standard allocations per us:      194.709
+Standard allocation frees per us: 116.986
 
-         arena_alloc() vs malloc() speedup: 1.899
-(reused) arena_alloc() vs malloc() speedup: 1.981
-          arena_free() vs   free() speedup: 113.738
+         arena_alloc() vs malloc() speedup: 3.127
+(reused) arena_alloc() vs malloc() speedup: 3.335
+          arena_free() vs   free() speedup: 111.753
 ```
 
 #### mimalloc-2.1.2
 
 ```
-Arena allocation time:             0.427s (min), 0.833s (max)
-Arena (reused) allocation time:    0.307s (min), 0.422s (max)
-Arena free time:                   0.012s (min), 0.015s (max)
-Arena allocations per us:          322.169
-Arena (reused) allocations per us: 636.613
-Arena allocation frees per us:     18022.349
+Arena allocation time:             0.414s (min), 0.830s (max)
+Arena (reused) allocation time:    0.291s (min), 0.406s (max)
+Arena free time:                   0.013s (min), 0.014s (max)
+Arena allocations per us:          323.479
+Arena (reused) allocations per us: 661.277
+Arena allocation frees per us:     19749.853
 
-Standard allocation time:         0.463s (min), 0.728s (max)
-Standard free time:               0.400s (min), 0.649s (max)
-Standard allocations per us:      184.483
-Standard allocation frees per us: 206.734
+Standard allocation time:         0.427s (min), 0.698s (max)
+Standard free time:               0.371s (min), 0.421s (max)
+Standard allocations per us:      192.235
+Standard allocation frees per us: 318.563
 
-         arena_alloc() vs malloc() speedup: 1.746
-(reused) arena_alloc() vs malloc() speedup: 3.451
-          arena_free() vs   free() speedup: 87.177
+         arena_alloc() vs malloc() speedup: 1.683
+(reused) arena_alloc() vs malloc() speedup: 3.440
+          arena_free() vs   free() speedup: 61.997
 ```
 
 #### jemalloc-5.3.0
 
 ```
-Arena allocation time:             0.483s (min), 0.976s (max)
-Arena (reused) allocation time:    0.321s (min), 0.440s (max)
-Arena free time:                   0.041s (min), 0.223s (max)
-Arena allocations per us:          275.087
-Arena (reused) allocations per us: 609.978
-Arena allocation frees per us:     1203.536
+Arena allocation time:             0.467s (min), 0.988s (max)
+Arena (reused) allocation time:    0.295s (min), 0.402s (max)
+Arena free time:                   0.038s (min), 0.123s (max)
+Arena allocations per us:          271.739
+Arena (reused) allocations per us: 667.488
+Arena allocation frees per us:     2173.577
 
-Standard allocation time:         0.318s (min), 0.671s (max)
-Standard free time:               0.481s (min), 0.534s (max)
-Standard allocations per us:      96.864
-Standard allocation frees per us: 121.633
+Standard allocation time:         0.312s (min), 0.739s (max)
+Standard free time:               0.487s (min), 0.533s (max)
+Standard allocations per us:      94.699
+Standard allocation frees per us: 131.374
 
-         arena_alloc() vs malloc() speedup: 2.840
-(reused) arena_alloc() vs malloc() speedup: 6.297
-          arena_free() vs   free() speedup: 9.895
+         arena_alloc() vs malloc() speedup: 2.870
+(reused) arena_alloc() vs malloc() speedup: 7.049
+          arena_free() vs   free() speedup: 16.545
 ```
 
 </details>
