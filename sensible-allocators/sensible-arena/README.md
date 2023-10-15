@@ -31,6 +31,13 @@ void *senarena_alloc_type(struct senarena *arena, type);
 void *senarena_alloc_array_of(struct senarena *arena, type, amount);
 ```
 
+## Compile options
+
+| CPP Variable                | default     | notes                                    |
+| ---                         | ---         | ---                                      |
+| SENARENA_DEFAULT_CHUNK_SIZE | 4080        | Only affects senarena compilation unit   |
+| SENARENA_NOINLINE           | not defined | Affects units that #include "senarena.h" |
+
 ## Benchmarks
 
 ### Methodology:
