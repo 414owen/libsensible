@@ -20,6 +20,7 @@ endfunction()
 
 add_modern_compile_opt(-pedantic -Wall -Wextra)
 
+# TODO migrate to unconditional CMAKE_C_FLAGS_DEBUG?
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
   add_compile_options(-O0)
   if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
