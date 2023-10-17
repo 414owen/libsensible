@@ -14,7 +14,7 @@
 #include "../src/sensible-arena.h"
 
 static const double time_threshold_nanos = 5e8; // rounds should take at least 0.2s
-static const int num_iters = 20;
+static const int num_iters = 10;
 static const int ints_to_allocate = 2;
 
 #ifdef WIN32
@@ -100,7 +100,9 @@ unsigned long determine_arena_alloc_amt(void) {
   if (stdout_is_tty()) {
     putchar('\n');
   }
-  printf("%lu arena allocations took %.3fs\n", num_allocations, ns_to_s(nanos));
+  printf("Doing %lu arena_alloc()s per round.\n"
+    "This number has been determined empirically for a round time >= %.3fs.\n",
+    num_allocations, ns_to_s(nanos));
   return num_allocations;
 }
 
@@ -165,7 +167,9 @@ unsigned long determine_standard_alloc_amt(void) {
   if (stdout_is_tty()) {
     putchar('\n');
   }
-  printf("%lu arena allocations took %.3fs\n", num_allocations, ns_to_s(nanos));
+  printf("Doing %lu malloc()s per round.\n"
+    "This number has been determined empirically for a round time >= %.3fs.\n",
+    num_allocations, ns_to_s(nanos));
   free((void*) ptrs);
   return num_allocations;
 }
@@ -202,7 +206,7 @@ int main(void) {
         const struct seninstant begin = seninstant_now();
         for (unsigned long i = 0; i < num_arena_allocations; i++) {
           volatile int *ints = senarena_alloc_array_of(&arena, int, ints_to_allocate);
-          ints[1] = 0;
+          ints[1] = 42;
         }
         const struct seninstant end = seninstant_now();
         const uint64_t nanos = seninstant_subtract(end, begin);
@@ -230,7 +234,7 @@ int main(void) {
             const struct seninstant begin = seninstant_now();
             for (unsigned long i = 0; i < num_arena_allocations; i++) {
               volatile int *ints = senarena_alloc_array_of(&arena, int, ints_to_allocate);
-              ints[1] = 0;
+              ints[1] = 42;
             }
             const struct seninstant end = seninstant_now();
             const uint64_t nanos = seninstant_subtract(end, begin);

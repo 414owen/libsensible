@@ -18,7 +18,10 @@ function(add_modern_compile_opt)
   endif()
 endfunction()
 
-add_modern_compile_opt(-pedantic -Wall -Wextra)
+add_modern_compile_opt(-pedantic -Wall -Wextra -fdata-sections -ffunction-sections)
+if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
+  add_link_options(-Wl,--gc-sections)
+endif()
 
 # TODO migrate to unconditional CMAKE_C_FLAGS_DEBUG?
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")

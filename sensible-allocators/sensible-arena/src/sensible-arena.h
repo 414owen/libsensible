@@ -28,6 +28,15 @@ extern "C" {
 #define senarena_likely(x)       (x)
 #endif
 
+#if defined(__has_attribute)
+# if __has_attribute(malloc)
+#  define senarena_malloc __attribute__((__malloc__))
+# endif
+# if __has_attribute(always_inline)
+#  define senarena_always_inline __attribute__((__always_inline__))
+# endif
+#endif
+
 #ifndef SENARENA_DEFAULT_CHUNK_SIZE
 # define SENARENA_DEFAULT_CHUNK_SIZE (4 * 1024 - sizeof(struct senarena_chunk_header))
 #endif
@@ -47,9 +56,9 @@ struct senarena_chunk_header {
 
 struct senarena {
   // pointer to the first unfree byte
-  unsigned char *top;
+  uintptr_t top;
   // pointer to the current chunk (after the header)
-  unsigned char *bottom;
+  uintptr_t bottom;
   // pointer to the next reusable chunk
   struct senarena_chunk_header *fresh_chunks;
 };
@@ -57,11 +66,11 @@ struct senarena {
 struct senarena senarena_new();
 
 #if defined(SENARENA_NOINLINE) && !defined(SENARENA_IMPL)
-void *senarena_alloc(struct senarena *arena, size_t byte_amount, size_t alignment);
+void *senarena_alloc(struct senarena *restrict arena, size_t byte_amount, size_t alignment) senarena_malloc;
 #endif
-void senarena_clear(struct senarena *arena);
+void senarena_clear(struct senarena *restrict arena);
 void senarena_free(struct senarena arena);
-void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignment);
+uintptr_t senarena_alloc_more(struct senarena *restrict arena, size_t amount, size_t alignment);
 
 #define senarena_alloc_type(arena, type) senarena_alloc((arena), sizeof(type), SENARENA_ALIGNOF(type))
 #define senarena_alloc_array_of(arena, type, amount) senarena_alloc(arena, sizeof(type) * amount, SENARENA_ALIGNOF(type))
@@ -72,11 +81,11 @@ void *senarena_alloc_more(struct senarena *arena, size_t amount, size_t alignmen
 #include <stdbool.h>
 
 #ifdef SENARENA_IMPL
- static
+static
 #else
- extern
+extern
 #endif
-inline
+senarena_always_inline inline
 uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
   // ptr           = 11010
   // 8             = 01000
@@ -93,31 +102,31 @@ uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
 }
 
 #ifndef SENARENA_IMPL
-extern inline
+extern senarena_always_inline inline
+senarena_malloc
 #endif
-void *senarena_alloc(struct senarena *arena, size_t amount, size_t alignment) {
+void *senarena_alloc(struct senarena *restrict arena, size_t amount, size_t alignment) {
   assert(alignment > 0);
-
-#ifndef NDEBUG
   {
     const bool alignmentPowerOfTwo = !(alignment == 0) && !(alignment & (alignment - 1));
     assert(alignmentPowerOfTwo);
   }
-#endif
+  uintptr_t top = arena->top;
+  const size_t amount_and_padding = amount + senarena_extra_bytes_needed((uintptr_t) top - amount, alignment);
 
-  const size_t amount_and_padding = amount + senarena_extra_bytes_needed((uintptr_t) arena->top - amount, alignment);
   // the invariant that top > bottom is maintained by us
   const size_t free_space = arena->top - arena->bottom;
   if senarena_unlikely(amount_and_padding > free_space) {
-    return senarena_alloc_more(arena, amount, alignment);
+    return (void*) senarena_alloc_more(arena, amount, alignment);
   }
   arena->top -= amount_and_padding;
-  return arena->top;
+  return (void*) arena->top;
 }
 
-#endif
-#endif
+#endif // defined(SENARENA_IMPL) || !defined(SENARENA_NOINLINE)
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif // ifndef SENSIBLE_ARENA_H

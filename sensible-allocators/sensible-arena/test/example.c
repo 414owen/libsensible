@@ -3,9 +3,9 @@
 
 #include "../src/sensible-arena.h"
 
-int main(int argc) {
+int main(void) {
   struct senarena arena = senarena_new();
-  uint64_t *a = senarena_alloc(&arena, sizeof(uint64_t) * 3, argc);
+  uint64_t *a = senarena_alloc(&arena, sizeof(uint64_t) * 3, 8);
   *a = 42;
   return 0;
 }

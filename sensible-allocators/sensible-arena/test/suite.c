@@ -64,7 +64,7 @@ void run_sensible_arena_suite(struct sentest_state *state) {
           struct senarena arena = senarena_new();
           const size_t capacity = arena.top - arena.bottom;
           const size_t first_alloc_size = SENARENA_DEFAULT_CHUNK_SIZE - 1000;
-          unsigned char *start_buffer = arena.bottom;
+          uintptr_t start_buffer = arena.bottom;
           {
             volatile unsigned char *area = senarena_alloc(&arena, first_alloc_size, 1);
             area[50] = 42;
@@ -90,7 +90,7 @@ void run_sensible_arena_suite(struct sentest_state *state) {
       sentest(state, "reuses the chunk chain") {
         struct senarena arena = senarena_new();
         sentest_assert_eq(state, arena.fresh_chunks, NULL);
-        unsigned char *chunk_data = arena.bottom;
+        uintptr_t chunk_data = arena.bottom;
         const size_t size = 1024 * 1024;
         // 1MiB
         volatile unsigned char *area = senarena_alloc(&arena, size, 1);
