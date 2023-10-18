@@ -17,8 +17,9 @@
 
 #define ROUNDS 10
 #define VERBOSE false
+#define REDUCTION_STEPS 10
 
-static const double time_threshold_nanos = 5e8; // rounds should take at least 0.2s
+static const double time_threshold_nanos = 5e8; // rounds should take at least 0.5s
 static const int ints_to_allocate = 2;
 
 #ifdef WIN32
@@ -75,12 +76,11 @@ unsigned long determine_arena_alloc_amt(void) {
     putchar('\n');
   }
 
-  const int reduction_steps = 6;
-  for (int j = 0; j < reduction_steps; j++) {
+  for (int j = 0; j < REDUCTION_STEPS; j++) {
     while (true) {
       const unsigned long m = num_allocations - num_allocations / (1 << (j + 1));
       if (stdout_is_tty()) {
-        printf("\rreducing %d/%d %lu", j + 1, reduction_steps, m);
+        printf("\rreducing %d/%d %lu", j + 1, REDUCTION_STEPS, m);
         fflush(stdout);
       }
       struct senarena a1 = senarena_new();
@@ -102,7 +102,7 @@ unsigned long determine_arena_alloc_amt(void) {
     putchar('\n');
   }
   printf("Doing %lu arena_alloc()s per round.\n"
-    "This number has been determined empirically for a round time >= %.3fs.\n\n",
+    "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
     num_allocations, ns_to_s(nanos));
   return num_allocations;
 }
@@ -140,12 +140,11 @@ unsigned long determine_standard_alloc_amt(void) {
     putchar('\n');
   }
 
-  const int reduction_steps = 5;
-  for (int j = 0; j < reduction_steps; j++) {
+  for (int j = 0; j < REDUCTION_STEPS; j++) {
     while (true) {
       const unsigned long m = num_allocations - num_allocations / (1 << (j + 1));
       if (stdout_is_tty()) {
-        printf("\rreducing %d/%d %lu", j + 1, reduction_steps, m);
+        printf("\rreducing %d/%d %lu", j + 1, REDUCTION_STEPS, m);
         fflush(stdout);
       }
       const struct seninstant begin = seninstant_now();
@@ -169,7 +168,7 @@ unsigned long determine_standard_alloc_amt(void) {
     putchar('\n');
   }
   printf("Doing %lu malloc()s per round.\n"
-    "This number has been determined empirically for a round time >= %.3fs.\n\n",
+    "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
     num_allocations, ns_to_s(nanos));
   free((void*) ptrs);
   return num_allocations;
