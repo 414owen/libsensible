@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: Unlicense
 
 #define _XOPEN_SOURCE 500
+#define SENARENA_NOINLINE
 
 #include <inttypes.h>
 #include <math.h>
@@ -51,7 +52,9 @@ uint64_t scale_allocations_up(uint64_t a) {
 // Find the number of allocations that makes sense per benchmark iteration
 static
 unsigned long determine_arena_alloc_amt(void) {
-  printf("Finding out how many arena allocations will take %.3fs\n", ns_to_s(time_threshold_nanos));
+  if (stdout_is_tty()) {
+    printf("Finding out how many arena allocations will take %.3fs\n", ns_to_s(time_threshold_nanos));
+  }
 
   unsigned long num_allocations = 2 << 10; // 1024
   uint64_t nanos = 0;
@@ -100,17 +103,19 @@ unsigned long determine_arena_alloc_amt(void) {
   }
   if (stdout_is_tty()) {
     putchar('\n');
+    printf("Doing %lu arena_alloc()s per round.\n"
+      "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
+      num_allocations, ns_to_s(nanos));
   }
-  printf("Doing %lu arena_alloc()s per round.\n"
-    "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
-    num_allocations, ns_to_s(nanos));
   return num_allocations;
 }
 
 // Find the number of allocations that makes sense per benchmark iteration
 static
 unsigned long determine_standard_alloc_amt(void) {
-  printf("Finding out how many standard allocations will take %.3fs\n", ns_to_s(time_threshold_nanos));
+  if (stdout_is_tty()) {
+    printf("Finding out how many standard allocations will take %.3fs\n", ns_to_s(time_threshold_nanos));
+  }
 
   unsigned long num_allocations = 2 << 10; // 1024
   volatile int **ptrs = malloc(sizeof(int*) * num_allocations);
@@ -166,10 +171,10 @@ unsigned long determine_standard_alloc_amt(void) {
   }
   if (stdout_is_tty()) {
     putchar('\n');
+    printf("Doing %lu malloc()s per round.\n"
+      "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
+      num_allocations, ns_to_s(nanos));
   }
-  printf("Doing %lu malloc()s per round.\n"
-    "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
-    num_allocations, ns_to_s(nanos));
   free((void*) ptrs);
   return num_allocations;
 }
@@ -262,7 +267,9 @@ int main(void) {
   const unsigned long num_standard_allocations = determine_standard_alloc_amt();
 
   {
-    puts("# Benchmarking arena use");
+    if (stdout_is_tty()) {
+      puts("# Benchmarking arena use");
+    }
     struct senarena arena;
 
     for (int j = 0; j < ROUNDS; j++) {
@@ -285,8 +292,8 @@ int main(void) {
       if (j == ROUNDS - 1) {
         if (stdout_is_tty()) {
           putchar('\r');
+          puts("# Benchmarking arena reuse");
         }
-        puts("# Benchmarking arena reuse");
 
         for (int k = 0; k < ROUNDS; k++) {
           if (stdout_is_tty()) {
@@ -320,7 +327,10 @@ int main(void) {
     }
   }
 
-  puts("\r# Benchmarking malloc use");
+  if (stdout_is_tty()) {
+    putchar('\r');
+    puts("# Benchmarking malloc use");
+  }
   uint64_t std_alloc_times_nanos[ROUNDS];
   uint64_t std_free_times_nanos[ROUNDS];
 
