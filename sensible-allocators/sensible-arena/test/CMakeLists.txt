@@ -13,6 +13,7 @@ target_link_libraries(
   ${PROJECT_NAME}-arena-bench-exe
   ${PROJECT_NAME}-arena
   ${PROJECT_NAME}-timing
+  m
 )
 
 add_custom_target(${PROJECT_NAME}-arena-bench

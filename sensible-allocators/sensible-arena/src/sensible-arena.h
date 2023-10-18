@@ -109,6 +109,7 @@ void *senarena_alloc(struct senarena *restrict arena, size_t amount, size_t alig
   assert(alignment > 0);
   {
     const bool alignmentPowerOfTwo = !(alignment == 0) && !(alignment & (alignment - 1));
+    (void) alignmentPowerOfTwo;
     assert(alignmentPowerOfTwo);
   }
   uintptr_t top = arena->top;
