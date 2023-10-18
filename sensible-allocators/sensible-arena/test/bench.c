@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: Unlicense
 
 #define _XOPEN_SOURCE 500
-#define SENARENA_NOINLINE
 
 #include <inttypes.h>
 #include <math.h>
@@ -16,7 +15,7 @@
 #include "../../../sensible-timing/src/sensible-timing.h"
 #include "../src/sensible-arena.h"
 
-#define ROUNDS 10
+#define ROUNDS 20
 #define VERBOSE false
 #define REDUCTION_STEPS 10
 
@@ -49,6 +48,20 @@ uint64_t scale_allocations_up(uint64_t a) {
   return a + (a >> 1) + (a >> 2);
 }
 
+static
+void clearln(void) {
+  if (stdout_is_tty()) {
+    printf("\33[2K\r");
+  }
+}
+
+static
+void clearln_nl(void) {
+  if (stdout_is_tty()) {
+    puts("\33[2K\r");
+  }
+}
+
 // Find the number of allocations that makes sense per benchmark iteration
 static
 unsigned long determine_arena_alloc_amt(void) {
@@ -60,7 +73,7 @@ unsigned long determine_arena_alloc_amt(void) {
   uint64_t nanos = 0;
   while (true) {
     if (stdout_is_tty()) {
-      printf("\rincreasing allocations: %lu", num_allocations);
+      printf("\rIncreasing allocations: %lu", num_allocations);
       fflush(stdout);
     }
     struct senarena a1 = senarena_new();
@@ -75,15 +88,13 @@ unsigned long determine_arena_alloc_amt(void) {
     num_allocations = scale_allocations_up(num_allocations);
   }
 
-  if (stdout_is_tty()) {
-    putchar('\n');
-  }
+  clearln();
 
   for (int j = 0; j < REDUCTION_STEPS; j++) {
     while (true) {
       const unsigned long m = num_allocations - num_allocations / (1 << (j + 1));
       if (stdout_is_tty()) {
-        printf("\rreducing %d/%d %lu", j + 1, REDUCTION_STEPS, m);
+        printf("\rReducing %d/%d %lu", j + 1, REDUCTION_STEPS, m);
         fflush(stdout);
       }
       struct senarena a1 = senarena_new();
@@ -102,8 +113,7 @@ unsigned long determine_arena_alloc_amt(void) {
     }
   }
   if (stdout_is_tty()) {
-    putchar('\n');
-    printf("Doing %lu arena_alloc()s per round.\n"
+    printf("\rDoing %lu arena_alloc()s per round.\n"
       "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
       num_allocations, ns_to_s(nanos));
   }
@@ -122,7 +132,7 @@ unsigned long determine_standard_alloc_amt(void) {
   uint64_t nanos = 0;
   while (true) {
     if (stdout_is_tty()) {
-      printf("\rincreasing allocations: %lu", num_allocations);
+      printf("\rIncreasing allocations: %lu", num_allocations);
       fflush(stdout);
     }
     const struct seninstant begin = seninstant_now();
@@ -141,15 +151,13 @@ unsigned long determine_standard_alloc_amt(void) {
     ptrs = realloc(ptrs, sizeof(int*) * num_allocations);
   }
 
-  if (stdout_is_tty()) {
-    putchar('\n');
-  }
+  clearln();
 
   for (int j = 0; j < REDUCTION_STEPS; j++) {
     while (true) {
       const unsigned long m = num_allocations - num_allocations / (1 << (j + 1));
       if (stdout_is_tty()) {
-        printf("\rreducing %d/%d %lu", j + 1, REDUCTION_STEPS, m);
+        printf("\rReducing %d/%d %lu", j + 1, REDUCTION_STEPS, m);
         fflush(stdout);
       }
       const struct seninstant begin = seninstant_now();
@@ -170,20 +178,12 @@ unsigned long determine_standard_alloc_amt(void) {
     }
   }
   if (stdout_is_tty()) {
-    putchar('\n');
-    printf("Doing %lu malloc()s per round.\n"
+    printf("\rDoing %lu malloc()s per round.\n"
       "This number has been determined empirically for a round time ≈ %.3fs.\n\n",
       num_allocations, ns_to_s(nanos));
   }
   free((void*) ptrs);
   return num_allocations;
-}
-
-static
-void clearln(void) {
-  if (stdout_is_tty()) {
-    puts("\33[2K");
-  }
 }
 
 static
@@ -259,14 +259,17 @@ double calc_mean(uint64_t *values, size_t num_values) {
 }
 
 int main(void) {
-  uint64_t arena_alloc_times_nanos[ROUNDS];
-  uint64_t arena_alloc_reused_times_nanos[ROUNDS];
-  uint64_t arena_alloc_free_times_nanos[ROUNDS];
-
   const unsigned long num_arena_allocations = determine_arena_alloc_amt();
   const unsigned long num_standard_allocations = determine_standard_alloc_amt();
+  double arena_alloc_throughput;
+  double arena_alloc_reused_throughput;
+  double arena_free_throughput;
 
   {
+    uint64_t arena_alloc_times_nanos[ROUNDS];
+    uint64_t arena_alloc_reused_times_nanos[ROUNDS];
+    uint64_t arena_alloc_free_times_nanos[ROUNDS];
+
     if (stdout_is_tty()) {
       puts("# Benchmarking arena use");
     }
@@ -291,7 +294,7 @@ int main(void) {
 
       if (j == ROUNDS - 1) {
         if (stdout_is_tty()) {
-          putchar('\r');
+          clearln();
           puts("# Benchmarking arena reuse");
         }
 
@@ -325,16 +328,69 @@ int main(void) {
       const uint64_t nanos = seninstant_subtract(end, begin);
       arena_alloc_free_times_nanos[j] = nanos;
     }
+
+    clearln_nl();
+
+    {
+      double min_time = ns_to_s(minimum(arena_alloc_times_nanos, ROUNDS));
+      double max_time = ns_to_s(maximum(arena_alloc_times_nanos, ROUNDS));
+      double mean_time = calc_mean(arena_alloc_times_nanos, ROUNDS);
+      arena_alloc_throughput = num_arena_allocations / (mean_time / 1000);
+      double alloc_times_in_seconds[ROUNDS];
+      nanos_to_seconds(alloc_times_in_seconds, arena_alloc_times_nanos, ROUNDS);
+      double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
+      if (VERBOSE) printf("Arena allocation time:\n"
+        "  min:    %.4fs\n"
+        "  max:    %.4fs\n"
+        "  mean:   %.4fs\n"
+        "  stdenv: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
+    }
+    {
+      double min_time = ns_to_s(minimum(arena_alloc_reused_times_nanos, ROUNDS));
+      double max_time = ns_to_s(maximum(arena_alloc_reused_times_nanos, ROUNDS));
+      double mean_time = calc_mean(arena_alloc_reused_times_nanos, ROUNDS);
+      arena_alloc_reused_throughput = num_arena_allocations / (mean_time / 1000);
+      double alloc_times_in_seconds[ROUNDS];
+      nanos_to_seconds(alloc_times_in_seconds, arena_alloc_reused_times_nanos, ROUNDS);
+      double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
+      if (VERBOSE) printf("Arena (reused) allocation time:\n"
+        "  min:    %.4fs\n"
+        "  max:    %.4fs\n"
+        "  mean:   %.4fs\n"
+        "  stddev: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
+    }
+    {
+      double min_time = ns_to_s(minimum(arena_alloc_free_times_nanos, ROUNDS));
+      double max_time = ns_to_s(maximum(arena_alloc_free_times_nanos, ROUNDS));
+      double mean_time = calc_mean(arena_alloc_free_times_nanos, ROUNDS);
+      arena_free_throughput = num_arena_allocations / (mean_time / 1000);
+      double free_times_in_seconds[ROUNDS];
+      nanos_to_seconds(free_times_in_seconds, arena_alloc_free_times_nanos, ROUNDS);
+      double stddev_time = calc_stddev(free_times_in_seconds, ROUNDS);
+      if (VERBOSE) printf("Arena free time:\n"
+        "  min:    %.4fs\n"
+        "  max:    %.4fs\n"
+        "  mean:   %.4fs\n"
+        "  stddev: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
+    }
+    printf("Arena allocation throughput:                  %.3f ops/μs\n", arena_alloc_throughput);
+    printf("Arena (reused) allocation throughput:         %.3f ops/μs\n", arena_alloc_reused_throughput);
+    printf("Arena free throughput:                        %.3f freed allocations/μs\n", arena_free_throughput);
+    putchar('\n');
   }
 
   if (stdout_is_tty()) {
     putchar('\r');
     puts("# Benchmarking malloc use");
   }
-  uint64_t std_alloc_times_nanos[ROUNDS];
-  uint64_t std_free_times_nanos[ROUNDS];
+
+  double std_alloc_throughput;
+  double std_free_throughput;
 
   {
+    uint64_t std_alloc_times_nanos[ROUNDS];
+    uint64_t std_free_times_nanos[ROUNDS];
+
     volatile int **ptrs = malloc(sizeof(int*) * num_standard_allocations);
 
     for (int j = 0; j < ROUNDS; j++) {
@@ -371,77 +427,42 @@ int main(void) {
         std_free_times_nanos[j] = nanos;
       }
     }
+
     free(ptrs);
-    clearln();
-  }
+    clearln_nl();
 
-  if (VERBOSE) {
-    double min_time = ns_to_s(minimum(arena_alloc_times_nanos, ROUNDS));
-    double max_time = ns_to_s(maximum(arena_alloc_times_nanos, ROUNDS));
-    double alloc_times_in_seconds[ROUNDS];
-    nanos_to_seconds(alloc_times_in_seconds, arena_alloc_times_nanos, ROUNDS);
-    double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
-    printf("Arena allocation time:\n"
-      "  min:    %.3fs\n"
-      "  max:    %.3fs\n"
-      "  stdenv: %.3f\n\n", min_time, max_time, stddev_time);
-  }
-  if (VERBOSE) {
-    double min_time = ns_to_s(minimum(arena_alloc_reused_times_nanos, ROUNDS));
-    double max_time = ns_to_s(maximum(arena_alloc_reused_times_nanos, ROUNDS));
-    double alloc_times_in_seconds[ROUNDS];
-    nanos_to_seconds(alloc_times_in_seconds, arena_alloc_reused_times_nanos, ROUNDS);
-    double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
-    printf("Arena (reused) allocation time:\n"
-      "  min:    %.3fs\n"
-      "  max:    %.3fs\n"
-      "  stddev: %.3f\n\n", min_time, max_time, stddev_time);
-  }
-  if (VERBOSE) {
-    double min_time = ns_to_s(minimum(arena_alloc_free_times_nanos, ROUNDS));
-    double max_time = ns_to_s(maximum(arena_alloc_free_times_nanos, ROUNDS));
-    double free_times_in_seconds[ROUNDS];
-    nanos_to_seconds(free_times_in_seconds, arena_alloc_free_times_nanos, ROUNDS);
-    double stddev_time = calc_stddev(free_times_in_seconds, ROUNDS);
-    printf("Arena free time:\n"
-      "  min:    %.3fs\n"
-      "  max:    %.3fs\n"
-      "  stddev: %.3f\n\n", min_time, max_time, stddev_time);
-  }
-  double arena_alloc_throughput = num_arena_allocations / (calc_mean(arena_alloc_times_nanos, ROUNDS) / 1000);
-  printf("Arena allocation throughput:                  %.3f ops/μs\n", arena_alloc_throughput);
-  double arena_alloc_reused_throughput = num_arena_allocations / (calc_mean(arena_alloc_reused_times_nanos, ROUNDS)/ 1000);
-  printf("Arena (reused) allocation throughput:         %.3f ops/μs\n", arena_alloc_reused_throughput);
-  double arena_free_throughput = num_arena_allocations / (calc_mean(arena_alloc_free_times_nanos, ROUNDS) / 1000);
-  printf("Arena free throughput:                        %.3f freed allocations/μs\n", arena_free_throughput);
-  putchar('\n');
+    {
+      double min_time = ns_to_s(minimum(std_alloc_times_nanos, ROUNDS));
+      double max_time = ns_to_s(maximum(std_alloc_times_nanos, ROUNDS));
+      double alloc_times_in_seconds[ROUNDS];
+      double mean_time = calc_mean(std_alloc_times_nanos, ROUNDS);
+      std_alloc_throughput = num_standard_allocations / (mean_time / 1000);
+      nanos_to_seconds(alloc_times_in_seconds, std_alloc_times_nanos, ROUNDS);
+      double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
+      if (VERBOSE) printf("Standard allocation time:\n"
+        "  min:    %.4fs\n"
+        "  max:    %.4fs\n"
+        "  mean:    %.4fs\n"
+        "  stddev: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
+    }
 
-  if (VERBOSE) {
-    double min_time = ns_to_s(minimum(std_alloc_times_nanos, ROUNDS));
-    double max_time = ns_to_s(maximum(std_alloc_times_nanos, ROUNDS));
-    double alloc_times_in_seconds[ROUNDS];
-    nanos_to_seconds(alloc_times_in_seconds, std_alloc_times_nanos, ROUNDS);
-    double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
-    printf("Standard allocation time:\n"
-      "  min: %.3fs\n"
-      "  max: %.3fs\n"
-      "  stddev: %.3f\n\n", min_time, max_time, stddev_time);
+    {
+      double min_time = ns_to_s(minimum(std_free_times_nanos, ROUNDS));
+      double max_time = ns_to_s(maximum(std_free_times_nanos, ROUNDS));
+      double free_times_in_seconds[ROUNDS];
+      double mean_time = calc_mean(std_free_times_nanos, ROUNDS);
+      std_free_throughput = num_standard_allocations / (mean_time / 1000);
+      nanos_to_seconds(free_times_in_seconds, std_free_times_nanos, ROUNDS);
+      double stddev_time = calc_stddev(free_times_in_seconds, ROUNDS);
+      if (VERBOSE) printf("Standard free time:\n"
+        "  min:    %.4fs\n"
+        "  max:    %.4fs\n"
+        "  mean:   %.4fs\n"
+        "  stdenv: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
+    }
+    printf("stdlib malloc() throughput:                   %.3f ops/μs\n", std_alloc_throughput);
+    printf("stdlib free() throughput:                     %.3f ops/μs\n", std_free_throughput);
   }
-  if (VERBOSE) {
-    double min_time = ns_to_s(minimum(std_free_times_nanos, ROUNDS));
-    double max_time = ns_to_s(maximum(std_free_times_nanos, ROUNDS));
-    double free_times_in_seconds[ROUNDS];
-    nanos_to_seconds(free_times_in_seconds, std_free_times_nanos, ROUNDS);
-    double stddev_time = calc_stddev(free_times_in_seconds, ROUNDS);
-    printf("Standard free time:\n"
-      "  min: %.3fs\n"
-      "  max: %.3fs\n"
-      "  stdenv: %.3f\n\n", min_time, max_time, stddev_time);
-  }
-  double std_alloc_throughput = num_standard_allocations / (calc_mean(std_alloc_times_nanos, ROUNDS) / 1000);
-  printf("stdlib malloc() throughput:                   %.3f ops/μs\n", std_alloc_throughput);
-  double std_free_throughput = num_standard_allocations / (calc_mean(std_alloc_times_nanos, ROUNDS) / 1000);
-  printf("stdlib free() throughput:                     %.3f ops/μs\n", std_free_throughput);
 
   putchar('\n');
   printf("         arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_throughput / std_alloc_throughput);
