@@ -16,7 +16,7 @@
 #include "../src/sensible-arena.h"
 
 #define ROUNDS 20
-#define VERBOSE false
+#define VERBOSE true
 #define REDUCTION_STEPS 10
 
 static const double time_threshold_nanos = 5e8; // rounds should take at least 0.5s
@@ -38,7 +38,7 @@ struct minmax_d {
 };
 
 static
-double ns_to_s(uint64_t ns) {
+double ns_to_s(double ns) {
   // three decimal places
   return (double) ns / 1e9;
 }
@@ -202,7 +202,7 @@ double calc_mean_d(double *values, size_t num_values) {
 }
 
 static
-double calc_stddev(double *values, size_t num_values) {
+double calc_stddev_d(double *values, size_t num_values) {
   double res = 0;
   double mean = calc_mean_d(values, num_values);
   for (size_t i = 0; i < num_values; i++) {
@@ -214,10 +214,10 @@ double calc_stddev(double *values, size_t num_values) {
 }
 
 static
-uint64_t minimum(uint64_t *values, size_t num_values) {
-  uint64_t res = values[0];
+double minimum_d(double *values, size_t num_values) {
+  double res = values[0];
   for (size_t i = 0; i < num_values; i++) {
-    uint64_t value = values[i];
+    double value = values[i];
     if (value < res) {
       res = value;
     }
@@ -226,10 +226,10 @@ uint64_t minimum(uint64_t *values, size_t num_values) {
 }
 
 static
-uint64_t maximum(uint64_t *values, size_t num_values) {
-  uint64_t res = values[0];
+double maximum_d(double *values, size_t num_values) {
+  double res = values[0];
   for (size_t i = 0; i < num_values; i++) {
-    uint64_t value = values[i];
+    double value = values[i];
     if (value > res) {
       res = value;
     }
@@ -237,33 +237,74 @@ uint64_t maximum(uint64_t *values, size_t num_values) {
   return res;
 }
 
-static
-void nanos_to_seconds(double *seconds, uint64_t *nanos, size_t num_values) {
-  for (size_t i = 0; i < num_values; i++) {
-    seconds[i] = ns_to_s(nanos[i]);
-  }
-}
+struct min_max_mean {
+  double min;
+  double max;
+  double mean;
+  double stddev;
+};
 
-static
-double calc_sum(uint64_t *values, size_t num_values) {
-  uint64_t res = 0;
-  for (size_t i = 0; i < num_values; i++) {
-    res += values[i];
+struct aggregates {
+  struct min_max_mean time_s;
+  struct min_max_mean throughtput_us;
+};
+
+struct aggregates calc_aggregates(uint64_t num_iters, uint64_t *times_nanos, uint64_t num_values) {
+  struct aggregates res;
+  {
+    double *times_s = malloc(sizeof(double) * num_values);
+    times_s[0] = 0;
+    for (size_t i = 0; i < num_values; i++) {
+      times_s[i] = ns_to_s(times_nanos[i]);
+    }
+    struct min_max_mean time = {
+      .min = minimum_d(times_s, num_values),
+      .max = maximum_d(times_s, num_values),
+      .mean = calc_mean_d(times_s, num_values),
+      .stddev = calc_stddev_d(times_s, num_values)
+    };
+    res.time_s = time;
+    free(times_s);
+  }
+  {
+    double *throughputs = malloc(sizeof(double) * num_values);
+    throughputs[0] = 0;
+    for (size_t i = 0; i < num_values; i++) {
+      throughputs[i] = 1000 * (double) num_iters / times_nanos[i];
+    }
+    struct min_max_mean throughput = {
+      .min = minimum_d(throughputs, num_values),
+      .max = maximum_d(throughputs, num_values),
+      .mean = calc_mean_d(throughputs, num_values),
+      .stddev = calc_stddev_d(throughputs, num_values)
+    };
+    res.throughtput_us = throughput;
+    free(throughputs);
   }
   return res;
 }
 
 static
-double calc_mean(uint64_t *values, size_t num_values) {
-  return (double) calc_sum(values, num_values) / (double) num_values;
+void print_aggregates(const char *name, struct aggregates aggs) {
+  if (VERBOSE) printf("%s time:\n"
+    "  min:    %.4fs\n"
+    "  max:    %.4fs\n"
+    "  mean:   %.4fs\n"
+    "  stdenv: %.4f\n\n",
+    name,
+    aggs.time_s.min,
+    aggs.time_s.max,
+    aggs.time_s.mean,
+    aggs.time_s.stddev);
 }
 
 int main(void) {
   const unsigned long num_arena_allocations = determine_arena_alloc_amt();
   const unsigned long num_standard_allocations = determine_standard_alloc_amt();
-  double arena_alloc_throughput;
-  double arena_alloc_reused_throughput;
-  double arena_free_throughput;
+
+  struct aggregates arena_alloc_aggregates;
+  struct aggregates arena_alloc_reused_aggregates;
+  struct aggregates arena_free_aggregates;
 
   {
     uint64_t arena_alloc_times_nanos[ROUNDS];
@@ -331,61 +372,26 @@ int main(void) {
 
     clearln_nl();
 
-    {
-      double min_time = ns_to_s(minimum(arena_alloc_times_nanos, ROUNDS));
-      double max_time = ns_to_s(maximum(arena_alloc_times_nanos, ROUNDS));
-      double mean_time = calc_mean(arena_alloc_times_nanos, ROUNDS);
-      arena_alloc_throughput = num_arena_allocations / (mean_time / 1000);
-      double alloc_times_in_seconds[ROUNDS];
-      nanos_to_seconds(alloc_times_in_seconds, arena_alloc_times_nanos, ROUNDS);
-      double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
-      if (VERBOSE) printf("Arena allocation time:\n"
-        "  min:    %.4fs\n"
-        "  max:    %.4fs\n"
-        "  mean:   %.4fs\n"
-        "  stdenv: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
-    }
-    {
-      double min_time = ns_to_s(minimum(arena_alloc_reused_times_nanos, ROUNDS));
-      double max_time = ns_to_s(maximum(arena_alloc_reused_times_nanos, ROUNDS));
-      double mean_time = calc_mean(arena_alloc_reused_times_nanos, ROUNDS);
-      arena_alloc_reused_throughput = num_arena_allocations / (mean_time / 1000);
-      double alloc_times_in_seconds[ROUNDS];
-      nanos_to_seconds(alloc_times_in_seconds, arena_alloc_reused_times_nanos, ROUNDS);
-      double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
-      if (VERBOSE) printf("Arena (reused) allocation time:\n"
-        "  min:    %.4fs\n"
-        "  max:    %.4fs\n"
-        "  mean:   %.4fs\n"
-        "  stddev: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
-    }
-    {
-      double min_time = ns_to_s(minimum(arena_alloc_free_times_nanos, ROUNDS));
-      double max_time = ns_to_s(maximum(arena_alloc_free_times_nanos, ROUNDS));
-      double mean_time = calc_mean(arena_alloc_free_times_nanos, ROUNDS);
-      arena_free_throughput = num_arena_allocations / (mean_time / 1000);
-      double free_times_in_seconds[ROUNDS];
-      nanos_to_seconds(free_times_in_seconds, arena_alloc_free_times_nanos, ROUNDS);
-      double stddev_time = calc_stddev(free_times_in_seconds, ROUNDS);
-      if (VERBOSE) printf("Arena free time:\n"
-        "  min:    %.4fs\n"
-        "  max:    %.4fs\n"
-        "  mean:   %.4fs\n"
-        "  stddev: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
-    }
-    printf("Arena allocation throughput:                  %.3f ops/μs\n", arena_alloc_throughput);
-    printf("Arena (reused) allocation throughput:         %.3f ops/μs\n", arena_alloc_reused_throughput);
-    printf("Arena free throughput:                        %.3f freed allocations/μs\n", arena_free_throughput);
+    arena_alloc_aggregates = calc_aggregates(num_arena_allocations, arena_alloc_times_nanos, ROUNDS);
+    arena_alloc_reused_aggregates = calc_aggregates(num_arena_allocations, arena_alloc_reused_times_nanos, ROUNDS);
+    arena_free_aggregates = calc_aggregates(num_arena_allocations, arena_alloc_free_times_nanos, ROUNDS);
+
+    print_aggregates("Arena allocation", arena_alloc_aggregates);
+    print_aggregates("Arena (reused) allocation", arena_alloc_reused_aggregates);
+    print_aggregates("Arena free", arena_free_aggregates);
+
+    printf("Arena allocation throughput:                  %.3f ops/μs\n", arena_alloc_aggregates.throughtput_us.mean);
+    printf("Arena (reused) allocation throughput:         %.3f ops/μs\n", arena_alloc_reused_aggregates.throughtput_us.mean);
+    printf("Arena free throughput:                        %.3f freed allocations/μs\n", arena_free_aggregates.throughtput_us.mean);
     putchar('\n');
   }
 
   if (stdout_is_tty()) {
-    putchar('\r');
     puts("# Benchmarking malloc use");
   }
 
-  double std_alloc_throughput;
-  double std_free_throughput;
+  struct aggregates std_alloc_aggregates;
+  struct aggregates std_free_aggregates;
 
   {
     uint64_t std_alloc_times_nanos[ROUNDS];
@@ -431,41 +437,31 @@ int main(void) {
     free(ptrs);
     clearln_nl();
 
-    {
-      double min_time = ns_to_s(minimum(std_alloc_times_nanos, ROUNDS));
-      double max_time = ns_to_s(maximum(std_alloc_times_nanos, ROUNDS));
-      double alloc_times_in_seconds[ROUNDS];
-      double mean_time = calc_mean(std_alloc_times_nanos, ROUNDS);
-      std_alloc_throughput = num_standard_allocations / (mean_time / 1000);
-      nanos_to_seconds(alloc_times_in_seconds, std_alloc_times_nanos, ROUNDS);
-      double stddev_time = calc_stddev(alloc_times_in_seconds, ROUNDS);
-      if (VERBOSE) printf("Standard allocation time:\n"
-        "  min:    %.4fs\n"
-        "  max:    %.4fs\n"
-        "  mean:    %.4fs\n"
-        "  stddev: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
-    }
+    std_alloc_aggregates = calc_aggregates(num_standard_allocations, std_alloc_times_nanos, ROUNDS);
+    std_free_aggregates = calc_aggregates(num_standard_allocations, std_free_times_nanos, ROUNDS);
 
-    {
-      double min_time = ns_to_s(minimum(std_free_times_nanos, ROUNDS));
-      double max_time = ns_to_s(maximum(std_free_times_nanos, ROUNDS));
-      double free_times_in_seconds[ROUNDS];
-      double mean_time = calc_mean(std_free_times_nanos, ROUNDS);
-      std_free_throughput = num_standard_allocations / (mean_time / 1000);
-      nanos_to_seconds(free_times_in_seconds, std_free_times_nanos, ROUNDS);
-      double stddev_time = calc_stddev(free_times_in_seconds, ROUNDS);
-      if (VERBOSE) printf("Standard free time:\n"
-        "  min:    %.4fs\n"
-        "  max:    %.4fs\n"
-        "  mean:   %.4fs\n"
-        "  stdenv: %.4f\n\n", min_time, max_time, ns_to_s(mean_time), stddev_time);
-    }
-    printf("stdlib malloc() throughput:                   %.3f ops/μs\n", std_alloc_throughput);
-    printf("stdlib free() throughput:                     %.3f ops/μs\n", std_free_throughput);
+    print_aggregates("Standard allocation", std_alloc_aggregates);
+    print_aggregates("Standard free", std_free_aggregates);
+
+    printf("stdlib malloc() throughput:                   %.3f ops/μs\n", std_alloc_aggregates.throughtput_us.mean);
+    printf("stdlib free() throughput:                     %.3f ops/μs\n", std_free_aggregates.throughtput_us.mean);
+    putchar('\n');
   }
 
+  puts("# Minimums");
+  printf("         arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_aggregates.throughtput_us.min / std_alloc_aggregates.throughtput_us.min);
+  printf("(reused) arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_reused_aggregates.throughtput_us.min / std_alloc_aggregates.throughtput_us.min);
+  printf("          arena_free() vs   free() speedup:   %.3f\n", arena_free_aggregates.throughtput_us.min / std_free_aggregates.throughtput_us.min);
   putchar('\n');
-  printf("         arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_throughput / std_alloc_throughput);
-  printf("(reused) arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_reused_throughput / std_alloc_throughput);
-  printf("          arena_free() vs   free() speedup:   %.3f\n", arena_free_throughput / std_free_throughput);
+
+  puts("# Maximums");
+  printf("         arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_aggregates.throughtput_us.max / std_alloc_aggregates.throughtput_us.max);
+  printf("(reused) arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_reused_aggregates.throughtput_us.max / std_alloc_aggregates.throughtput_us.max);
+  printf("          arena_free() vs   free() speedup:   %.3f\n", arena_free_aggregates.throughtput_us.max / std_free_aggregates.throughtput_us.max);
+  putchar('\n');
+
+  puts("# Means");
+  printf("         arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_aggregates.throughtput_us.mean / std_alloc_aggregates.throughtput_us.mean);
+  printf("(reused) arena_alloc() vs malloc() speedup:   %.3f\n", arena_alloc_reused_aggregates.throughtput_us.mean / std_alloc_aggregates.throughtput_us.mean);
+  printf("          arena_free() vs   free() speedup:   %.3f\n", arena_free_aggregates.throughtput_us.mean / std_free_aggregates.throughtput_us.mean);
 }
