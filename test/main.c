@@ -11,6 +11,8 @@
 #include "../sensible-test/test/suite.h"
 #include "../sensible-data-structures/sensible-bitvec/test/suite.h"
 #include "../sensible-allocators/sensible-arena/test/suite.h"
+#include "../sensible-timing/test/suite.h"
+#include "../sensible-args/test/suite.h"
 
 // This is the combined test suite for all sensible
 // libraries. It uses shared libraries built in all
@@ -37,5 +39,7 @@ int main(int argc, char **argv) {
   run_sensible_test_suite(state);
   run_sensible_bitvec_suite(state);
   run_sensible_arena_suite(state);
+  run_sensible_timing_suite(state);
+  run_sensible_args_suite(state);
   return sentest_finish(state);
 }

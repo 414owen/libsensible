@@ -9,6 +9,8 @@ target_link_libraries(
   ${PROJECT_NAME}-test-suite
   ${PROJECT_NAME}-bitvec-suite
   ${PROJECT_NAME}-arena-suite
+  ${PROJECT_NAME}-args-suite
+  ${PROJECT_NAME}-timing-suite
 )
 
 add_custom_target(check
