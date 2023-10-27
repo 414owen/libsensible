@@ -13,7 +13,7 @@
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 void run_sensible_bitvec_suite(struct sentest_state *state) {
-  sentest_group(state, "bitvecs") {
+  sentest_group(state, "sensible-bitvec") {
     sentest(state, "can be allocated and freed") {
       struct senbitvec bs = senbitvec_new(10);
       senbitvec_free(&bs);

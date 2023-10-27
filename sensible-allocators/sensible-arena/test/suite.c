@@ -18,7 +18,7 @@ int one_in(int n) {
 }
 
 void run_sensible_arena_suite(struct sentest_state *state) {
-  sentest_group(state, "arena") {
+  sentest_group(state, "sensible-arena") {
     sentest(state, "can be constructed and freed") {
       struct senarena arena = senarena_new();
       senarena_free(arena);
