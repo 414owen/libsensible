@@ -31,8 +31,8 @@ struct parse_state {
   char **restrict argv;
   int arg_cursor;
   int argc;
-  program_args program_args;
-  argument_bag *arguments;
+  struct program_args program_args;
+  struct argument_bag *arguments;
   struct senargs_vec_string subcommands;
 };
 
@@ -297,7 +297,7 @@ void parse_noprefix(struct parse_state *state, const char *restrict arg_str) {
       state->arg_cursor++;
       senargs_vec_string_push(&state->subcommands, a.names.subcommand_name);
       state->arguments->subcommand_chosen = a.data.subcommand.value;
-      argument_bag *tmp = state->arguments;
+      struct argument_bag *tmp = state->arguments;
       state->arguments = &a.data.subcommand.subs;
       parse_args_rec(state);
       state->arguments = tmp;
@@ -313,7 +313,7 @@ void parse_noprefix(struct parse_state *state, const char *restrict arg_str) {
 }
 
 // recursive, but should be fine
-static void preprocess_and_validate_args(argument_bag bag) {
+static void preprocess_and_validate_args(struct argument_bag bag) {
   for (unsigned i = 0; i < bag.amt; i++) {
     argument a = bag.args[i];
     if (a.tag == ARG_SUBCOMMAND) {
@@ -359,7 +359,7 @@ static void parse_args_rec(struct parse_state *state) {
 }
 
 static
-struct parse_state new_state(program_args program_args, int argc,
+struct parse_state new_state(struct program_args program_args, int argc,
                              char **restrict argv) {
   struct parse_state res = {
     // assume the first parameter is the program name
@@ -375,12 +375,12 @@ struct parse_state new_state(program_args program_args, int argc,
   return res;
 }
 
-void print_help(program_args program_args, int argc, char **restrict argv) {
+void print_help(struct program_args program_args, int argc, char **restrict argv) {
   struct parse_state state = new_state(program_args, argc, argv);
   print_help_internal(&state);
 }
 
-void parse_args(program_args program_args, int argc, char **restrict argv) {
+void parse_args(struct program_args program_args, int argc, char **restrict argv) {
   preprocess_and_validate_args(*program_args.root);
   struct parse_state state = new_state(program_args, argc, argv);
   parse_args_rec(&state);

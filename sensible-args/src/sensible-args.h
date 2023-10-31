@@ -12,24 +12,24 @@ extern "C" {
 #include <stdbool.h>
 #include <stdlib.h>
 
-typedef enum {
+enum arg_type {
   ARG_FLAG,
   ARG_STRING,
   ARG_INT,
-  ARG_SUBCOMMAND,
-} arg_type;
+  ARG_SUBCOMMAND
+};
 
 struct argument;
 typedef struct argument argument;
 
-typedef struct {
+struct argument_bag {
   argument *args;
   unsigned amt;
   int subcommand_chosen;
-} argument_bag;
+};
 
 struct argument {
-  const arg_type tag;
+  const enum arg_type tag;
 
   // when '\0', argument has no short name
   const char short_name;
@@ -46,7 +46,7 @@ struct argument {
     char **string_val;
     int *int_val;
     struct {
-      argument_bag subs;
+      struct argument_bag subs;
       int value;
     } subcommand;
   } data;
@@ -55,13 +55,13 @@ struct argument {
   unsigned long_len;
 };
 
-typedef struct {
-  argument_bag *root;
+struct program_args {
+  struct argument_bag *root;
   const char *preamble;
-} program_args;
+};
 
-void parse_args(program_args args, int argc, char **argv);
-void print_help(program_args program_args, int argc, char **argv);
+void parse_args(struct program_args args, int argc, char **argv);
+void print_help(struct program_args program_args, int argc, char **argv);
 
 #ifdef __cplusplus
 }
