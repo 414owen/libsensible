@@ -12,24 +12,23 @@ extern "C" {
 #include <stdbool.h>
 #include <stdlib.h>
 
-enum arg_type {
-  ARG_FLAG,
-  ARG_STRING,
-  ARG_INT,
-  ARG_SUBCOMMAND
+enum senargs_argument_type {
+  SENARG_FLAG,
+  SENARG_STRING,
+  SENARG_INT,
+  SENARG_SUBCOMMAND
 };
 
-struct argument;
-typedef struct argument argument;
+struct senargs_argument;
 
-struct argument_bag {
-  argument *args;
+struct senargs_argument_bag {
+  struct senargs_argument **args;
   unsigned amt;
   int subcommand_chosen;
 };
 
-struct argument {
-  const enum arg_type tag;
+struct senargs_argument {
+  const enum senargs_argument_type tag;
 
   // when '\0', argument has no short name
   const char short_name;
@@ -42,11 +41,11 @@ struct argument {
   const char *description;
 
   union {
-    bool *flag_val;
-    char **string_val;
-    int *int_val;
+    bool flag_value;
+    const char *string_value;
+    int int_value;
     struct {
-      struct argument_bag subs;
+      struct senargs_argument_bag subs;
       int value;
     } subcommand;
   } data;
@@ -55,13 +54,13 @@ struct argument {
   unsigned long_len;
 };
 
-struct program_args {
-  struct argument_bag *root;
+struct senargs_description {
+  struct senargs_argument_bag *root;
   const char *preamble;
 };
 
-void parse_args(struct program_args args, int argc, char **argv);
-void print_help(struct program_args program_args, int argc, char **argv);
+void senargs_parse(struct senargs_description args, int argc, const char **argv);
+void senargs_print_help(struct senargs_description program_args, int argc, const char **argv);
 
 #ifdef __cplusplus
 }
