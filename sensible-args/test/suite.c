@@ -31,8 +31,8 @@ void run_sensible_args_suite(struct sentest_state *state) {
     sentest_group(state, "flags") {
       struct senargs_argument y_flag = {
         .tag = SENARG_FLAG,
-        .short_name = 'y',
-        .names.long_name = "yes",
+        .small = 'y',
+        .full = "yes",
         .description = "is yes the answer?",
         .data.flag_value = false
       };
@@ -68,6 +68,18 @@ void run_sensible_args_suite(struct sentest_state *state) {
           };
           senargs_parse(desc, STATIC_LEN(argv), argv);
           sentest_assert_eq(state, y_flag.data.flag_value, true);
+        }
+      }
+
+      sentest_group(state, "when different") {
+        sentest(state, "is set to false") {
+          y_flag.data.flag_value = false;
+          static const char *argv[] = {
+            "./test",
+            "-n"
+          };
+          senargs_parse(desc, STATIC_LEN(argv), argv);
+          sentest_assert_eq(state, y_flag.data.flag_value, false);
         }
       }
     }

@@ -23,44 +23,45 @@ struct senargs_argument;
 
 struct senargs_argument_bag {
   struct senargs_argument **args;
-  unsigned amt;
+  const unsigned amt;
   int subcommand_chosen;
 };
 
 struct senargs_argument {
   const enum senargs_argument_type tag;
 
-  // when '\0', argument has no short name
-  const char short_name;
+  // in C, `long` and `short` are keywords
 
-  union {
-    const char *long_name;
-    const char *subcommand_name;
-  } names;
+  // use NULL or "" to disable
+  const char *full;
+  // when '\0', argument has no short name
+  const char small;
 
   const char *description;
 
-  union {
+  union data {
     bool flag_value;
-    const char *string_value;
+    char *string_value;
     int int_value;
-    struct {
+    struct subcommand {
       struct senargs_argument_bag subs;
       int value;
     } subcommand;
   } data;
-
-  // Filled in by argument parser
-  unsigned long_len;
 };
 
 struct senargs_description {
   struct senargs_argument_bag *root;
   const char *preamble;
+  const bool do_not_exit;
 };
 
-void senargs_parse(struct senargs_description args, int argc, const char **argv);
-void senargs_print_help(struct senargs_description program_args, int argc, const char **argv);
+struct senargs_result {
+  bool success;
+};
+
+void senargs_parse(struct senargs_description args, int argc, char **argv);
+void senargs_print_help(struct senargs_description program_args, int argc, char **argv);
 
 #ifdef __cplusplus
 }

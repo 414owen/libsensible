@@ -19,16 +19,8 @@ struct senargs_vec_string {
   size_t capacity;
 };
 
-void senargs_vec_string_push(struct senargs_vec_string *vec, const char *str) {
-  if (vec->length == vec->capacity) {
-    vec->capacity += vec->capacity >> 1;
-    vec->data = realloc(vec->data, sizeof(char*) * vec->capacity);
-  }
-  vec->data[vec->length++] = str;
-}
-
 struct parse_state {
-  const char **restrict argv;
+  char **argv;
   int arg_cursor;
   int argc;
   struct senargs_description program_args;
@@ -36,11 +28,11 @@ struct parse_state {
   struct senargs_vec_string subcommands;
 };
 
-static void parse_args_rec(struct parse_state *state);
-
-#ifndef NDEBUG
-static bool valid_short_flag(char c) { return c >= 'a' && c <= 'z'; }
-#endif
+enum prefix_type {
+  PREFIX_LONG,
+  PREFIX_SHORT,
+  PREFIX_NONE,
+};
 
 static
 char *type_strs[] = {
@@ -52,20 +44,39 @@ char *type_strs[] = {
 static
 const struct senargs_argument help_arg = {
   .tag = SENARG_FLAG,
-  .short_name = 'h',
-  .names.long_name = "help",
-  .long_len = 4,
+  .small = 'h',
+  .full = "help",
   .description = "list available commands and arguments",
 };
 
+void senargs_vec_string_push(struct senargs_vec_string *vec, const char *str) {
+  if (vec->length == vec->capacity) {
+    vec->capacity += vec->capacity >> 1;
+    vec->data = realloc(vec->data, sizeof(char*) * vec->capacity);
+  }
+  vec->data[vec->length++] = str;
+}
+
+static void senargs_parse_rec(struct parse_state *state);
+
+#ifndef NDEBUG
+static bool valid_short_flag(char c) { return c >= 'a' && c <= 'z'; }
+#endif
+
+static
+size_t senargs_safe_strlen(const char *str) {
+  if (str == NULL) return 0;
+  return strlen(str);
+}
+
 static
 void print_argument(struct senargs_argument a, int max_long_len, int max_type_len) {
-  char *type_str = type_strs[a.tag];
+  const char *type_str = type_strs[a.tag];
   printf("  -%c%*s--%s%*s  %s\n",
-         a.short_name == '\0' ? ' ' : a.short_name,
-         2 + max_long_len - a.long_len,
+         a.small == '\0' ? ' ' : a.small,
+         2 + max_long_len - (int)senargs_safe_strlen(a.full),
          "",
-         a.names.long_name,
+         a.full,
          2 + max_type_len,
          type_str,
          a.description);
@@ -73,7 +84,9 @@ void print_argument(struct senargs_argument a, int max_long_len, int max_type_le
 
 static
 void print_help_internal(struct parse_state *state) {
-  puts(state->program_args.preamble);
+  if (state->program_args.preamble != NULL) {
+    puts(state->program_args.preamble);
+  }
   unsigned num_subcommands = 0;
 
   for (unsigned i = 0; i < state->arguments->amt; i++) {
@@ -99,15 +112,15 @@ void print_help_internal(struct parse_state *state) {
   }
 
   puts("\n");
-  unsigned max_long_len = help_arg.long_len;
+  unsigned max_long_len = senargs_safe_strlen(help_arg.full);
   for (unsigned i = 0; i < state->arguments->amt; i++) {
     struct senargs_argument *a = state->arguments->args[i];
-    max_long_len = MAX(max_long_len, a->long_len);
+    max_long_len = MAX(max_long_len, senargs_safe_strlen(a->full));
   }
 
   int max_type_len = 0;
   for (size_t i = 0; i < STATIC_LEN(type_strs); i++) {
-    max_type_len = MAX(max_type_len, (int)strlen(type_strs[i]));
+    max_type_len = MAX(max_type_len, (int)senargs_safe_strlen(type_strs[i]));
   }
 
   if (num_subcommands > 0) {
@@ -117,7 +130,7 @@ void print_help_internal(struct parse_state *state) {
       if (a->tag == SENARG_SUBCOMMAND) {
         printf("%*s %*s %s\n",
                8 + max_long_len,
-               a->names.subcommand_name,
+               a->full,
                2 + max_type_len,
                "",
                a->description);
@@ -157,7 +170,7 @@ void expected_argument(struct parse_state *restrict state,
 }
 
 static
-void assign_data(struct senargs_argument *restrict a, const char *restrict str) {
+void assign_data(struct senargs_argument *restrict a, char *restrict str) {
   // convert from string to type
   switch (a->tag) {
     case SENARG_INT:
@@ -175,18 +188,17 @@ void assign_data(struct senargs_argument *restrict a, const char *restrict str) 
 }
 
 static
-void parse_long(struct parse_state *restrict state, const char *restrict arg_str) {
-  size_t arg_str_len = strlen(arg_str);
+void parse_long(struct parse_state *restrict state, char *restrict arg_str) {
+  size_t arg_str_len = senargs_safe_strlen(arg_str);
   if (strcmp(arg_str, "help") == 0) {
     print_help_internal(state);
     exit(0);
   }
   for (unsigned i = 0; i < state->arguments->amt; i++) {
     struct senargs_argument *a = state->arguments->args[i];
-    // TODO --arg=val form
-    bool prefix_matches = arg_str_len >= a->long_len &&
-                          strncmp(arg_str, a->names.long_name, a->long_len) == 0;
-    bool matches = prefix_matches && arg_str_len == a->long_len;
+    bool prefix_matches = arg_str_len >= senargs_safe_strlen(a->full) &&
+                          strncmp(arg_str, a->full, senargs_safe_strlen(a->full)) == 0;
+    bool matches = prefix_matches && arg_str_len == senargs_safe_strlen(a->full);
     bool matched = false;
     switch (a->tag) {
       case SENARG_SUBCOMMAND:
@@ -201,14 +213,14 @@ void parse_long(struct parse_state *restrict state, const char *restrict arg_str
       case SENARG_STRING:
         if (matches) {
           if (state->arg_cursor == state->argc - 1) {
-            expected_argument(state, a->names.long_name);
+            expected_argument(state, a->full);
           }
           state->arg_cursor++;
-          const char *str = state->argv[state->arg_cursor];
+          char *str = state->argv[state->arg_cursor];
           assign_data(a, str);
           matched = true;
-        } else if (prefix_matches && arg_str[a->long_len] == '=') {
-          const char *str = &arg_str[a->long_len + 1];
+        } else if (prefix_matches && arg_str[senargs_safe_strlen(a->full)] == '=') {
+          char *str = &arg_str[senargs_safe_strlen(a->full) + 1];
           assign_data(a, str);
           matched = true;
         }
@@ -224,7 +236,7 @@ void parse_long(struct parse_state *restrict state, const char *restrict arg_str
 
 static
 void parse_short(struct parse_state *state, const char *restrict arg_str) {
-  size_t arg_str_len = strlen(arg_str);
+  size_t arg_str_len = senargs_safe_strlen(arg_str);
   int cursor = state->arg_cursor;
   if (strchr(arg_str, 'h')) {
     print_help_internal(state);
@@ -241,7 +253,7 @@ void parse_short(struct parse_state *state, const char *restrict arg_str) {
     bool matched = false;
     for (unsigned j = 0; !matched && j < state->arguments->amt; j++) {
       struct senargs_argument *a = state->arguments->args[j];
-      matched |= c == a->short_name;
+      matched |= c == a->small;
       switch (a->tag) {
         case SENARG_SUBCOMMAND:
           break;
@@ -258,16 +270,16 @@ void parse_short(struct parse_state *state, const char *restrict arg_str) {
               fprintf(stderr,
                       "Short argument '%c' takes a parameter, so can't be used "
                       "with other short arguments.\n",
-                      a->short_name);
+                      a->small);
               print_help_internal(state);
               exit(1);
             }
             if (cursor == state->argc - 1) {
-              char s[2] = {a->short_name, '\0'};
+              char s[2] = {a->small, '\0'};
               expected_argument(state, s);
             }
             cursor++;
-            const char *str = state->argv[cursor];
+            char *str = state->argv[cursor];
             assign_data(a, str);
           }
           break;
@@ -294,14 +306,14 @@ void parse_noprefix(struct parse_state *state, const char *restrict arg_str) {
     if (a->tag != SENARG_SUBCOMMAND) {
       continue;
     }
-    if (strcmp(arg_str, a->names.subcommand_name) == 0) {
+    if (strcmp(arg_str, a->full) == 0) {
       subcommand_taken = true;
       state->arg_cursor++;
-      senargs_vec_string_push(&state->subcommands, a->names.subcommand_name);
+      senargs_vec_string_push(&state->subcommands, a->full);
       state->arguments->subcommand_chosen = a->data.subcommand.value;
       struct senargs_argument_bag *tmp = state->arguments;
       state->arguments = &a->data.subcommand.subs;
-      parse_args_rec(state);
+      senargs_parse_rec(state);
       state->arguments = tmp;
       break;
     }
@@ -322,21 +334,14 @@ void preprocess_and_validate_args(struct senargs_argument_bag bag) {
     if (a.tag == SENARG_SUBCOMMAND) {
       preprocess_and_validate_args(a.data.subcommand.subs);
     }
-    assert(a.short_name == 0 || valid_short_flag(a.short_name));
-    bag.args[i]->long_len = strlen(a.names.long_name);
+    assert(a.full == 0 || valid_short_flag(a.small));
   }
 }
 
-typedef enum {
-  PREFIX_LONG,
-  PREFIX_SHORT,
-  PREFIX_NONE,
-} prefix_type;
-
-static void parse_args_rec(struct parse_state *state) {
+static void senargs_parse_rec(struct parse_state *state) {
   while (state->arg_cursor < state->argc) {
-    const char *arg_str = state->argv[state->arg_cursor];
-    prefix_type prefix_type = PREFIX_NONE;
+    char *arg_str = state->argv[state->arg_cursor];
+    enum prefix_type prefix_type = PREFIX_NONE;
 
     if (arg_str[0] == '-') {
       prefix_type = PREFIX_SHORT;
@@ -363,7 +368,7 @@ static void parse_args_rec(struct parse_state *state) {
 
 static
 struct parse_state new_state(struct senargs_description program_args, int argc,
-                             const char **restrict argv) {
+                             char **argv) {
   struct parse_state res = {
     // assume the first parameter is the program name
     .arg_cursor = 1,
@@ -378,14 +383,15 @@ struct parse_state new_state(struct senargs_description program_args, int argc,
   return res;
 }
 
-void senargs_print_help(struct senargs_description program_args, int argc, const char **restrict argv) {
+void senargs_print_help(struct senargs_description program_args, int argc, char **restrict argv) {
   struct parse_state state = new_state(program_args, argc, argv);
   print_help_internal(&state);
+  free(state.subcommands.data);
 }
 
-void senargs_parse(struct senargs_description program_args, int argc, const char **restrict argv) {
+void senargs_parse(struct senargs_description program_args, int argc, char **restrict argv) {
   preprocess_and_validate_args(*program_args.root);
   struct parse_state state = new_state(program_args, argc, argv);
-  parse_args_rec(&state);
+  senargs_parse_rec(&state);
   free(state.subcommands.data);
 }
