@@ -22,7 +22,8 @@ void run_sensible_args_suite(struct sentest_state *state) {
 
       struct senargs_description args = {
         .root = &root,
-        .preamble = NULL
+        .preamble = NULL,
+        .do_not_panic = true
       };
 
       senargs_parse(args, 0, NULL);
@@ -46,7 +47,8 @@ void run_sensible_args_suite(struct sentest_state *state) {
 
       struct senargs_description desc = {
         .root = &root,
-        .preamble = NULL
+        .preamble = NULL,
+        .do_not_panic = true
       };
 
       sentest_group(state, "when not present") {

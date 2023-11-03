@@ -16,3 +16,4 @@ set_target_properties(${PROJECT_NAME}-test PROPERTIES PUBLIC_HEADER include/sens
 # Test suite
 
 add_subdirectory(test EXCLUDE_FROM_ALL)
+add_subdirectory(examples EXCLUDE_FROM_ALL)

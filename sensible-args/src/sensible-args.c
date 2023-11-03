@@ -154,9 +154,11 @@ void print_help_internal(struct parse_state *state) {
 static
 void unknown_arg(struct parse_state *restrict state,
                         const char *restrict arg_str) {
-  fprintf(stderr, "Unknown argument: '%s'.\n", arg_str);
-  print_help_internal(state);
-  exit(1);
+  if (!state->program_args.do_not_panic) {
+    fprintf(stderr, "Unknown argument: '%s'.\n", arg_str);
+    print_help_internal(state);
+    exit(1);
+  }
 }
 
 // TODO HEDLEY_NO_RETURN
@@ -289,11 +291,15 @@ void parse_short(struct parse_state *state, const char *restrict arg_str) {
       if (first_unmatched) {
         first_unmatched = false;
       }
-      fprintf(stderr, "Unknown short argument: '%c'\n", c);
+      if (!state->program_args.do_not_panic) {
+        fprintf(stderr, "Unknown short argument: '%c'\n", c);
+      }
     }
   }
   if (!first_unmatched) {
-    exit(1);
+    if (!state->program_args.do_not_panic) {
+      exit(1);
+    }
   }
   state->arg_cursor = cursor + 1;
 }

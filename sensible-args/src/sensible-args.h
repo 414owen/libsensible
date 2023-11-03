@@ -53,7 +53,8 @@ struct senargs_argument {
 struct senargs_description {
   struct senargs_argument_bag *root;
   const char *preamble;
-  const bool do_not_exit;
+  // if set, won't exit, won't even print errors
+  const bool do_not_panic;
 };
 
 struct senargs_result {
