@@ -12,7 +12,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 enum senargs_argument_type {
   SENARG_FLAG,

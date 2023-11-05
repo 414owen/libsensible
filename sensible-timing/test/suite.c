@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: CC0-1.0
 
-#include "../include/sensible-timing.h"
-#include "../../sensible-test/include/sensible-test.h"
-#include "../../sensible-macros/include/sensible-macros.h"
-
 #include <stdbool.h>
 #include <inttypes.h>
 #include <stdint.h>
+
+#include "sensible-timing.h"
+#include "sensible-test.h"
+#include "sensible-macros.h"
 
 senmac_public
 void run_sensible_timing_suite(struct sentest_state *state) {

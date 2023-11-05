@@ -13,7 +13,7 @@ extern "C" {
 #include <stdlib.h>
 #include <limits.h>
 
-#include "../../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 #define SENSIBLE_BITVECTOR_CELL unsigned char
 #define SENSIBLE_BITVECTOR_CELL_BITS CHAR_BIT

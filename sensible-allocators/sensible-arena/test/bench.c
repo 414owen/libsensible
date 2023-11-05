@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "../../../sensible-test/include/sensible-test.h"
-#include "../../../sensible-timing/include/sensible-timing.h"
-#include "../include/sensible-arena.h"
+#include "sensible-test.h"
+#include "sensible-timing.h"
+#include "sensible-arena.h"
 
 #define ROUNDS 20
 #define VERBOSE true

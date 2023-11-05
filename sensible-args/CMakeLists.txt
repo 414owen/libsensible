@@ -8,9 +8,25 @@
 add_library(${PROJECT_NAME}-args SHARED src/sensible-args.c)
 set_target_properties(${PROJECT_NAME}-args PROPERTIES VERSION ${PROJECT_VERSION})
 set_target_properties(${PROJECT_NAME}-args PROPERTIES SOVERSION ${PROJECT_VERSION_MAJOR})
-set_target_properties(${PROJECT_NAME}-args PROPERTIES PUBLIC_HEADER include/sensible-args.h)
 
-install(TARGETS ${PROJECT_NAME}-args)
+target_sources(${PROJECT_NAME}-args
+  PUBLIC
+    FILE_SET public_headers
+    TYPE HEADERS
+    BASE_DIRS include
+    FILES
+      include/sensible-args.h
+)
+
+target_link_libraries(
+  ${PROJECT_NAME}-args
+  PRIVATE
+    ${PROJECT_NAME}-bitvec
+    ${PROJECT_NAME}-macros
+)
+
+install(TARGETS ${PROJECT_NAME}-args FILE_SET public_headers)
+
 
 # Test suite
 

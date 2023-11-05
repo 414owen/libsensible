@@ -6,8 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "sensible-macros.h"
 #include "../include/sensible-test.h"
-#include "../../sensible-macros/include/sensible-macros.h"
 
 // This is the test suite we're testing the output of.
 static

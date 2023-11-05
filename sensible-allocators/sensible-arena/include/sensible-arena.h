@@ -14,7 +14,7 @@ extern "C" {
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "../../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 // Allocator optimized for small allocations.
 // Frees everything at once.

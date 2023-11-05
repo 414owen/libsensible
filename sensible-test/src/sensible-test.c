@@ -12,9 +12,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "sensible-macros.h"
 #include "../include/sensible-test.h"
-
-#include "../../sensible-macros/include/sensible-macros.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 

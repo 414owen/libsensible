@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#include "../../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 #define SENARENA_IMPL
 #include "../include/sensible-arena.h"

@@ -9,14 +9,17 @@ target_link_libraries(
 )
 
 add_executable(${PROJECT_NAME}-arena-bench-exe bench.c)
+
 target_link_libraries(
   ${PROJECT_NAME}-arena-bench-exe
-  ${PROJECT_NAME}-arena
-  ${PROJECT_NAME}-timing
+  PRIVATE
+    ${PROJECT_NAME}-arena
+    ${PROJECT_NAME}-macros
+    ${PROJECT_NAME}-timing
 )
 
 IF (NOT WIN32)
-  target_link_libraries(${PROJECT_NAME}-arena-bench-exe m)
+  target_link_libraries(${PROJECT_NAME}-arena-bench-exe PRIVATE m)
 ENDIF()
 
 add_custom_target(${PROJECT_NAME}-arena-bench
@@ -28,17 +31,20 @@ add_library(${PROJECT_NAME}-arena-suite SHARED suite.c)
 add_executable(${PROJECT_NAME}-arena-suite-exe main.c)
 target_link_libraries(
   ${PROJECT_NAME}-arena-suite-exe
-  ${PROJECT_NAME}-arena-suite
-  ${PROJECT_NAME}-test
+  PRIVATE
+    ${PROJECT_NAME}-arena-suite
+    ${PROJECT_NAME}-test
 )
 target_link_libraries(
   ${PROJECT_NAME}-arena-suite
-  ${PROJECT_NAME}-test
-  ${PROJECT_NAME}-arena
+  PRIVATE
+    ${PROJECT_NAME}-arena
+    ${PROJECT_NAME}-test
+    ${PROJECT_NAME}-macros
 )
 
 IF (NOT WIN32)
-  target_link_libraries(${PROJECT_NAME}-arena-suite m)
+  target_link_libraries(${PROJECT_NAME}-arena-suite PRIVATE m)
 ENDIF()
 
 add_custom_target(${PROJECT_NAME}-arena-check

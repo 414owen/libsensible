@@ -20,7 +20,7 @@ extern "C" {
 #include <stdbool.h>
 #include <stdio.h>
 
-#include "../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 struct sentest_config {
   // Enable color output

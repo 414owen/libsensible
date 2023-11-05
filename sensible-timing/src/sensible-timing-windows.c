@@ -7,7 +7,7 @@
 #include <synchapi.h>
 
 #include "sensible-timing.h"
-#include "../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 senmac_public
 struct seninstant seninstant_now(void) {

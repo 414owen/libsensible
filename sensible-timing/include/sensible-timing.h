@@ -17,7 +17,8 @@ extern "C" {
 
 #include <stdbool.h>
 #include <stdint.h>
-#include "../../sensible-macros/include/sensible-macros.h"
+
+#include "sensible-macros.h"
 
 senmac_public struct seninstant seninstant_now(void);
 senmac_public uint64_t seninstant_subtract(struct seninstant end, struct seninstant begin);

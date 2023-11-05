@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../../sensible-test/include/sensible-test.h"
+#include "sensible-test.h"
 #include "suite.h"
 
 int main(void) {

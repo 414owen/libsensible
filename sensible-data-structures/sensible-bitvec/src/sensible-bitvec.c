@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "../include/sensible-bitvec.h"
-#include "../../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 

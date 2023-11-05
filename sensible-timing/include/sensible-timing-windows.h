@@ -13,7 +13,7 @@ extern "C" {
 #include <stdint.h>
 #include <profileapi.h>
 
-#include "../../sensible-macros/include/sensible-macros.h"
+#include "sensible-macros.h"
 
 struct seninstant {
   uint64_t value;

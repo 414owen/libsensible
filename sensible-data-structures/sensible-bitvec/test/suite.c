@@ -7,9 +7,9 @@
 #include <string.h>
 #include <time.h>
 
-#include "../include/sensible-bitvec.h"
-#include "../../../sensible-test/include/sensible-test.h"
-#include "../../../sensible-macros/include/sensible-macros.h"
+#include "sensible-bitvec.h"
+#include "sensible-test.h"
+#include "sensible-macros.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
