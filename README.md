@@ -9,10 +9,11 @@ SPDX-License-Identifier: Unlicense
 A collection of C libraries for writing sensible, threadsafe, fast code.
 
 Some libraries need to be shared because they are finnicky and shouldn't be
-rewritten per-project. For this, I've written the `sensible-arena` allocator.
+rewritten per-project, for example, the `sensible-arena` allocator.
 
 Some libraries are a huge quality-of-life boon, for example `sensible-test`,
-a frictionless test library, which your CI understands.
+a frictionless test library, which your CI understands, and `sensible-args`,
+for parsing command line arguments easily.
 
 Some libraries fill in the cracks between platforms, `sensible-timing` will
 be one of these.
