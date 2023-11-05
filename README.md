@@ -15,8 +15,7 @@ Some libraries are a huge quality-of-life boon, for example `sensible-test`,
 a frictionless test library, which your CI understands, and `sensible-args`,
 for parsing command line arguments easily.
 
-Some libraries fill in the cracks between platforms, `sensible-timing` will
-be one of these.
+Some libraries fill in the cracks between platforms, `sensible-timing` is one of these.
 
 * ISO-C99 compliant
 * Zero dependencies
