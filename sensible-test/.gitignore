@@ -1,9 +1,0 @@
-# SPDX-FileCopyrightText: 2023 The libsensible Authors
-#
-# SPDX-License-Identifier: Unlicense
-
-CMakeFiles
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-*.xml

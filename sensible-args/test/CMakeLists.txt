@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2023 The libsensible Authors
 #
-# SPDX-License-Identifier: Unlicense
+# SPDX-License-Identifier: CC0-1.0
 
 add_library(${PROJECT_NAME}-args-suite SHARED suite.c)
 add_executable(${PROJECT_NAME}-args-suite-exe main.c)

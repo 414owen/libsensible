@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2023 The libsensible Authors
 #
-# SPDX-License-Identifier: Unlicense
+# SPDX-License-Identifier: CC0-1.0
 
 .direnv
 .cache
@@ -15,3 +15,6 @@ compile_commands.json
 .helix
 .vs
 CMakeSettings.json
+
+# sensible-test outputs
+*.xml

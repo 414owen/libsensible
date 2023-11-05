@@ -6,12 +6,12 @@ Source: https://github.com/414owen/libsensible
 
 Files: flake.lock
 Copyright: 2023 The libsensible Authors
-License: Unlicense
+License: CC0-1.0
 
 Files: .clangd
 Copyright: 2023 The libsensible Authors
-License: Unlicense
+License: CC0-1.0
 
 Files: .envrc
 Copyright: 2023 The libsensible Authors
-License: Unlicense
+License: CC0-1.0

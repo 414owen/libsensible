@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2023 The libsensible Authors
 //
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: CC0-1.0
 
 #ifndef SENSIBLE_BITVEC_SUITE_H
 #define SENSIBLE_BITVEC_SUITE_H
