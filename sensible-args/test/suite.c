@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "../src/sensible-args.h"
-#include "../../sensible-test/src/sensible-test.h"
+#include "../include/sensible-args.h"
+#include "../../sensible-test/include/sensible-test.h"
 #include "../../sensible-macros/include/sensible-macros.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))

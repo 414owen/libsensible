@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "../src/sensible-test.h"
+#include "../include/sensible-test.h"
 
 #ifdef _WIN32
   #define DEVNULL "nul"

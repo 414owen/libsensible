@@ -22,5 +22,28 @@
         ];
       };
     });
+
+    packages = eachSystem (system: pkgs: rec {
+      libsensible = pkgs.stdenv.mkDerivation {
+        name = "libsensible";
+        version = "0.1";
+
+        src = ./.;
+
+        nativBuildInputs = [
+          pkgs.cmake
+        ];
+
+        meta = with pkgs.lib; {
+          homepage = "https://github.com/414owen/libsensible";
+          description = "A collection of libraries for making C programming enjoyable";
+          licencse = licenses.bsd3;
+          platforms = with platforms; linux ++ darwin;
+          maintainers = [ maintainers."414owen" ];    
+        };
+      };
+
+      default = libsensible;
+    });
   };
 }

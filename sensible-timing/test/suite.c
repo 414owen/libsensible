@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: CC0-1.0
 
-#include "../src/sensible-timing.h"
-#include "../../sensible-test/src/sensible-test.h"
+#include "../include/sensible-timing.h"
+#include "../../sensible-test/include/sensible-test.h"
 #include "../../sensible-macros/include/sensible-macros.h"
 
 #include <stdbool.h>

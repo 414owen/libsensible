@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-#include "../src/sensible-test.h"
+#include "../include/sensible-test.h"
 #include "../../sensible-macros/include/sensible-macros.h"
 
 senmac_public void run_sensible_test_suite(struct sentest_state *state);

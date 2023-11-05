@@ -10,9 +10,9 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "../../../sensible-test/src/sensible-test.h"
-#include "../../../sensible-timing/src/sensible-timing.h"
-#include "../src/sensible-arena.h"
+#include "../../../sensible-test/include/sensible-test.h"
+#include "../../../sensible-timing/include/sensible-timing.h"
+#include "../include/sensible-arena.h"
 
 #define ROUNDS 20
 #define VERBOSE true
@@ -26,6 +26,7 @@ bool stdout_is_tty(void) {
   return _isatty(_fileno(stdout));
 }
 #else
+#include <unistd.h>
 bool stdout_is_tty(void) {
   return isatty(fileno(stdout));
 }

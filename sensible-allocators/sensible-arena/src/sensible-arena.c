@@ -12,7 +12,7 @@
 #include "../../../sensible-macros/include/sensible-macros.h"
 
 #define SENARENA_IMPL
-#include "sensible-arena.h"
+#include "../include/sensible-arena.h"
 #undef SENARENA_IMPL
 
 #define SENARENA_CHUNK_HEADER_SIZE sizeof(struct senarena_chunk_header)

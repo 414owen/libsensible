@@ -6,7 +6,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 
-#include "../src/sensible-timing.h"
+#include "../include/sensible-timing.h"
 
 // minimum sleep found is around 14ms, so we use 50ms as a test
 int main(void) {

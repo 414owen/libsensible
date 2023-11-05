@@ -12,7 +12,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "sensible-test.h"
+#include "../include/sensible-test.h"
 
 #include "../../sensible-macros/include/sensible-macros.h"
 

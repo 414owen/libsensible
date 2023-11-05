@@ -9,7 +9,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "sensible-timing.h"
+#include "../include/sensible-timing.h"
 
 #define MONOTONIC_CLOCK_TYPE CLOCK_MONOTONIC
 

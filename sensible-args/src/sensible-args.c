@@ -10,8 +10,8 @@
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
-#include "sensible-args.h"
-#include "../../sensible-data-structures/sensible-bitvec/src/sensible-bitvec.h"
+#include "../include/sensible-args.h"
+#include "../../sensible-data-structures/sensible-bitvec/include/sensible-bitvec.h"
 
 struct senargs_vec_string {
   const char **data;

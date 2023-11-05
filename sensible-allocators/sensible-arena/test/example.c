@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "../src/sensible-arena.h"
+#include "../include/sensible-arena.h"
 
 int main(void) {
   struct senarena arena = senarena_new();

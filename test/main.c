@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "../sensible-test/src/sensible-test.h"
+#include "../sensible-test/include/sensible-test.h"
 #include "../sensible-test/test/suite.h"
 #include "../sensible-data-structures/sensible-bitvec/test/suite.h"
 #include "../sensible-allocators/sensible-arena/test/suite.h"

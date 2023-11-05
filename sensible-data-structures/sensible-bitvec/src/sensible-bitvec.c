@@ -7,7 +7,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "sensible-bitvec.h"
+#include "../include/sensible-bitvec.h"
 #include "../../../sensible-macros/include/sensible-macros.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))

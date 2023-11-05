@@ -6,7 +6,7 @@
 #include <stdio.h>
 
 #include "suite.h"
-#include "../src/sensible-test.h"
+#include "../include/sensible-test.h"
 
 int main(void) {
   struct sentest_config config = {
