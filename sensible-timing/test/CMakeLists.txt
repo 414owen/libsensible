@@ -19,3 +19,10 @@ add_custom_target(${PROJECT_NAME}-timing-check
   COMMAND ${PROJECT_NAME}-timing-suite-exe
   COMMENT "Run test suite"
 )
+
+add_executable(${PROJECT_NAME}-timing-measure-sleep-variation measure-sleep-variation.c)
+
+target_link_libraries(
+  ${PROJECT_NAME}-timing-measure-sleep-variation
+  ${PROJECT_NAME}-timing
+)

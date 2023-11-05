@@ -2,15 +2,16 @@
 //
 // SPDX-License-Identifier: Unlicense
 
-#include "../src/sensible-args.h"
-#include "../../sensible-test/src/sensible-test.h"
-
 #include <stdbool.h>
 #include <stdint.h>
-#include <unistd.h>
+
+#include "../src/sensible-args.h"
+#include "../../sensible-test/src/sensible-test.h"
+#include "../../sensible-macros/include/sensible-macros.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+senmac_public
 void run_sensible_args_suite(struct sentest_state *state) {
   sentest_group(state, "sensible-args") {
     sentest(state, "minimal invocation") {
@@ -64,7 +65,7 @@ void run_sensible_args_suite(struct sentest_state *state) {
       sentest_group(state, "when present") {
         sentest(state, "is set to true") {
           y_flag.data.flag_value = false;
-          static const char *argv[] = {
+          static char *argv[] = {
             "./test",
             "-y"
           };
@@ -76,7 +77,7 @@ void run_sensible_args_suite(struct sentest_state *state) {
       sentest_group(state, "when different") {
         sentest(state, "is set to false") {
           y_flag.data.flag_value = false;
-          static const char *argv[] = {
+          static char *argv[] = {
             "./test",
             "-n"
           };

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Unlicense
 
 # Library
+# add_definitions(-DBUILD_DLL)
 
 add_library(${PROJECT_NAME}-test SHARED
   src/sensible-test.c

@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Unlicense
 
 add_executable(${PROJECT_NAME}-suite-exe main.c)
+
 target_link_libraries(
   ${PROJECT_NAME}-suite-exe
   ${PROJECT_NAME}-test

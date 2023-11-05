@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "sensible-bitvec.h"
+#include "../../../sensible-macros/include/sensible-macros.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -20,6 +21,7 @@ void senbitvec_reserve_one(struct senbitvec *bv) {
   }
 }
 
+senmac_public
 struct senbitvec senbitvec_new(size_t capacity_bits) {
   size_t num_slots = SENSIBLE_BITNSLOTS(capacity_bits);
   num_slots = MAX(num_slots, 2);
@@ -31,21 +33,25 @@ struct senbitvec senbitvec_new(size_t capacity_bits) {
   return res;
 }
 
+senmac_public
 bool senbitvec_get(struct senbitvec bv, size_t n) {
   assert(n < bv.length);
   return SENSIBLE_BITTEST(bv.data, n);
 }
 
+senmac_public
 void senbitvec_set_true(struct senbitvec bv, size_t n) {
   assert(n < bv.length);
   SENSIBLE_BITSET(bv.data, n);
 }
 
+senmac_public
 void senbitvec_set_false(struct senbitvec bv, size_t n) {
   assert(n < bv.length);
   SENSIBLE_BITCLEAR(bv.data, n);
 }
 
+senmac_public
 void senbitvec_set(struct senbitvec bv, bool value, size_t n) {
   assert(n < bv.length);
   if (value) {
@@ -55,18 +61,21 @@ void senbitvec_set(struct senbitvec bv, bool value, size_t n) {
   }
 }
 
+senmac_public
 void senbitvec_push_true(struct senbitvec *bv) {
   senbitvec_reserve_one(bv);
   SENSIBLE_BITSET(bv->data, bv->length);
   bv->length++;
 }
 
+senmac_public
 void senbitvec_push_false(struct senbitvec *bv) {
   senbitvec_reserve_one(bv);
   SENSIBLE_BITCLEAR(bv->data, bv->length);
   bv->length++;
 }
 
+senmac_public
 void senbitvec_push(struct senbitvec *bv, bool value) {
   if (value) {
     senbitvec_push_true(bv);
@@ -75,12 +84,14 @@ void senbitvec_push(struct senbitvec *bv, bool value) {
   }
 }
 
+senmac_public
 bool senbitvec_pop(struct senbitvec *bv) {
   assert(bv->length > 0);
   bv->length--;
   return SENSIBLE_BITTEST(bv->data, bv->length);
 }
 
+senmac_public
 void senbitvec_free(struct senbitvec *bv) {
 #ifndef NDEBUG
   bv->capacity = 0;

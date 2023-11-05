@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "../src/sensible-test.h"
+#include "../../sensible-macros/include/sensible-macros.h"
 
 // This is the test suite we're testing the output of.
 static
@@ -100,10 +101,10 @@ void run_sentest_passes_suite(struct sentest_state *state) {
     }
     if (output == NULL) continue;
     sentest(state, "prints ticks for passes") {
-      sentest_assert_eq(state, count_substrings(output, "✓"), 3);
+      sentest_assert_eq(state, count_substrings(output, SENTEST_TICK), 3);
     }
     sentest(state, "doesn't print any crosses") {
-      sentest_assert_eq(state, count_substrings(output, "x"), 0);
+      sentest_assert_eq(state, count_substrings(output, SENTEST_CROSS), 0);
     }
     free(output);
   }
@@ -140,10 +141,11 @@ void run_sentest_fails_suite(struct sentest_state *state) {
     }
     if (output == NULL) continue;
     sentest(state, "prints ticks for passes") {
-      sentest_assert_eq(state, count_substrings(output, "✓"), 2);
+
+      sentest_assert_eq(state, count_substrings(output, SENTEST_TICK), 2);
     }
     sentest(state, "prints crosses for failures") {
-      sentest_assert_eq(state, count_substrings(output, "✕"), 1);
+      sentest_assert_eq(state, count_substrings(output, " " SENTEST_CROSS), 1);
     }
     free(output);
   }
@@ -167,6 +169,7 @@ void run_sentest_fails_suite(struct sentest_state *state) {
   remove(junit_out_path);
 }
 
+senmac_public
 void run_sensible_test_suite(struct sentest_state *state) {
   sentest_group(state, "sensible-test") {
     sentest_group(state, "suite which passes") {

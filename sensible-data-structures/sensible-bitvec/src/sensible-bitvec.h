@@ -13,6 +13,8 @@ extern "C" {
 #include <stdlib.h>
 #include <limits.h>
 
+#include "../../../sensible-macros/include/sensible-macros.h"
+
 #define SENSIBLE_BITVECTOR_CELL unsigned char
 #define SENSIBLE_BITVECTOR_CELL_BITS CHAR_BIT
 
@@ -36,20 +38,20 @@ struct senbitvec {
   size_t capacity;
 };
 
-struct senbitvec senbitvec_new(size_t capacity_bits);
+senmac_public struct senbitvec senbitvec_new(size_t capacity_bits);
 
-bool senbitvec_get(struct senbitvec bv, size_t n);
+senmac_public bool senbitvec_get(struct senbitvec bv, size_t n);
 
-void senbitvec_set_true(struct senbitvec bv, size_t n);
-void senbitvec_set_false(struct senbitvec bv, size_t n);
-void senbitvec_set(struct senbitvec bv, bool value, size_t n);
+senmac_public void senbitvec_set_true(struct senbitvec bv, size_t n);
+senmac_public void senbitvec_set_false(struct senbitvec bv, size_t n);
+senmac_public void senbitvec_set(struct senbitvec bv, bool value, size_t n);
 
-void senbitvec_push_true(struct senbitvec *bv);
-void senbitvec_push_false(struct senbitvec *bv);
-void senbitvec_push(struct senbitvec *bv, bool value);
+senmac_public void senbitvec_push_true(struct senbitvec *bv);
+senmac_public void senbitvec_push_false(struct senbitvec *bv);
+senmac_public void senbitvec_push(struct senbitvec *bv, bool value);
 
-bool senbitvec_pop(struct senbitvec *bv);
-void senbitvec_free(struct senbitvec *bv);
+senmac_public bool senbitvec_pop(struct senbitvec *bv);
+senmac_public void senbitvec_free(struct senbitvec *bv);
 
 #ifdef __cplusplus
 }

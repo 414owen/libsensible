@@ -10,6 +10,14 @@ project(sensible
 )
 
 set(CMAKE_C_STANDARD 99)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (WIN32)
+  # Windows expects DLLS to be in the same path as the EXE, or in the
+  # path or something...
+  set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+  set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+endif()
 
 # Adds a compile option if we're on GCC or Clang
 function(add_modern_compile_opt)
@@ -20,7 +28,11 @@ endfunction()
 
 add_modern_compile_opt(-Wall -Wextra -fdata-sections -ffunction-sections)
 if (CMAKE_C_COMPILER_ID MATCHES "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
-  add_link_options(-Wl,--gc-sections)
+  if (APPLE)
+    add_link_options(-Wl,-dead_strip)
+  else()
+    add_link_options(-Wl,--gc-sections)
+  endif()
 endif()
 
 # TODO migrate to unconditional CMAKE_C_FLAGS_DEBUG?

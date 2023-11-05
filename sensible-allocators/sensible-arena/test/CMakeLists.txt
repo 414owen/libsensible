@@ -13,8 +13,11 @@ target_link_libraries(
   ${PROJECT_NAME}-arena-bench-exe
   ${PROJECT_NAME}-arena
   ${PROJECT_NAME}-timing
-  m
 )
+
+IF (NOT WIN32)
+  target_link_libraries(${PROJECT_NAME}-arena-bench-exe m)
+ENDIF()
 
 add_custom_target(${PROJECT_NAME}-arena-bench
   COMMAND ${PROJECT_NAME}-arena-bench-exe
@@ -32,8 +35,11 @@ target_link_libraries(
   ${PROJECT_NAME}-arena-suite
   ${PROJECT_NAME}-test
   ${PROJECT_NAME}-arena
-  m
 )
+
+IF (NOT WIN32)
+  target_link_libraries(${PROJECT_NAME}-arena-suite m)
+ENDIF()
 
 add_custom_target(${PROJECT_NAME}-arena-check
   COMMAND ${PROJECT_NAME}-arena-suite-exe

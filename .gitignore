@@ -13,3 +13,5 @@ release-debug
 
 compile_commands.json
 .helix
+.vs
+CMakeSettings.json

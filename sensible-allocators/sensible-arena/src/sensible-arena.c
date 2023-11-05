@@ -4,8 +4,12 @@
 
 #include <assert.h>
 #include <stdbool.h>
+// for perror
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#include "../../../sensible-macros/include/sensible-macros.h"
 
 #define SENARENA_IMPL
 #include "sensible-arena.h"
@@ -67,11 +71,16 @@ static
 uintptr_t senarena_chunk_new(uintptr_t size, struct senarena_chunk_header *ptr) {
   // with size 7 and alignment 8 you'll need 1 more byte if you align up or down
   struct senarena_chunk_header *chunk = (struct senarena_chunk_header*) malloc(size + SENARENA_CHUNK_HEADER_SIZE);
+  if (chunk == NULL) {
+    perror("Couldn't allocate arena chunk");
+    exit(1);
+  }
   chunk->ptr = ptr;
   chunk->capacity = size;
   return (uintptr_t) chunk + SENARENA_CHUNK_HEADER_SIZE;
 }
 
+senmac_public
 struct senarena senarena_new() {
   uintptr_t bottom = senarena_chunk_new(SENARENA_DEFAULT_CHUNK_SIZE, NULL);
   struct senarena res = {
@@ -112,6 +121,7 @@ struct senarena_chunk_header *senarena_join_chunk_chains(struct senarena_chunk_h
   }
 }
 
+senmac_public
 void senarena_clear(struct senarena *restrict arena) {
   struct senarena_chunk_header *current = (struct senarena_chunk_header*) (arena->bottom - SENARENA_CHUNK_HEADER_SIZE);
   arena->top = (uintptr_t) current + current->capacity + SENARENA_CHUNK_HEADER_SIZE;
@@ -127,6 +137,7 @@ size_t senarena_extra_fresh_bytes_needed(uintptr_t alignment) {
   return senarena_extra_bytes_needed(start, alignment);
 }
 
+senmac_public
 uintptr_t senarena_alloc_more(struct senarena *restrict arena, size_t amount, size_t alignment) {
   // true is... quite likely
   while senarena_likely(true) {
@@ -174,6 +185,7 @@ void senarena_free_chunk_chain(struct senarena_chunk_header *current) {
   }
 }
 
+senmac_public
 void senarena_free(struct senarena arena) {
   struct senarena_chunk_header *current = (struct senarena_chunk_header *) (arena.bottom- SENARENA_CHUNK_HEADER_SIZE);
   senarena_free_chunk_chain(current);

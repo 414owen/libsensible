@@ -18,7 +18,7 @@ void print_llu_underscored(long long unsigned n) {
   unsigned long long length = 0;
   unsigned long long exp = 1;
   {
-    int m = n;
+    long long unsigned m = n;
     while (m > 0) {
       length++;
       m /= 10;
@@ -31,8 +31,8 @@ void print_llu_underscored(long long unsigned n) {
   }
 
   exp /= 10;
-  for (int i = length; i > 0; i--) {
-    putchar('0' + (n / exp));
+  for (long long unsigned i = length; i > 0; i--) {
+    putchar('0' + (int)(n / exp));
     n %= exp;
     exp /= 10;
     if (i > 1 && (i - 1) % 3 == 0) {
@@ -40,8 +40,6 @@ void print_llu_underscored(long long unsigned n) {
     }
   }
 }
-
-
 
 int main(void) {
   struct sentest_config config = {
@@ -62,7 +60,7 @@ int main(void) {
     sentest_finish(state);
     double end_time = (double)clock()/CLOCKS_PER_SEC;
     fputs("Groups per second: ", stdout);
-    print_llu_underscored(n / (end_time - start_time));
+    print_llu_underscored((long long unsigned) (n / (end_time - start_time)));
     putchar('\n');
   }
 
@@ -78,7 +76,7 @@ int main(void) {
     sentest_finish(state);
     double end_time = (double)clock()/CLOCKS_PER_SEC;
     fputs("Tests per second: ", stdout);
-    print_llu_underscored(n / (end_time - start_time));
+    print_llu_underscored((long long unsigned) (n / (end_time - start_time)));
     putchar('\n');
   }
 
@@ -95,7 +93,7 @@ int main(void) {
     sentest_finish(state);
     double end_time = (double)clock()/CLOCKS_PER_SEC;
     fputs("Asserts per second: ", stdout);
-    print_llu_underscored(n / (end_time - start_time));
+    print_llu_underscored((long long unsigned) (n / (end_time - start_time)));
     putchar('\n');
   }
   fclose(config.output);

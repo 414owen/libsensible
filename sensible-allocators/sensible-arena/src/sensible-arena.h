@@ -5,6 +5,7 @@
 #ifndef SENSIBLE_ARENA_H
 #define SENSIBLE_ARENA_H
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -12,6 +13,8 @@ extern "C" {
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#include "../../../sensible-macros/include/sensible-macros.h"
 
 // Allocator optimized for small allocations.
 // Frees everything at once.
@@ -28,12 +31,17 @@ extern "C" {
 #define senarena_likely(x)       (x)
 #endif
 
+#define senarena_malloc
+#define senarena_always_inline inline
+
 #if defined(__has_attribute)
 # if __has_attribute(malloc)
+#  undef senarena_malloc
 #  define senarena_malloc __attribute__((__malloc__))
 # endif
 # if __has_attribute(always_inline)
-#  define senarena_always_inline __attribute__((__always_inline__))
+#  undef senarena_always_inline
+#  define senarena_always_inline inline __attribute__((__always_inline__))
 # endif
 #endif
 
@@ -63,14 +71,15 @@ struct senarena {
   struct senarena_chunk_header *fresh_chunks;
 };
 
-struct senarena senarena_new();
+
+senmac_public struct senarena senarena_new();
 
 #if defined(SENARENA_NOINLINE) && !defined(SENARENA_IMPL)
-void *senarena_alloc(struct senarena *restrict arena, size_t byte_amount, size_t alignment) senarena_malloc;
+senmac_public void *senarena_alloc(struct senarena *restrict arena, size_t byte_amount, size_t alignment) senarena_malloc;
 #endif
-void senarena_clear(struct senarena *restrict arena);
-void senarena_free(struct senarena arena);
-uintptr_t senarena_alloc_more(struct senarena *restrict arena, size_t amount, size_t alignment);
+senmac_public void senarena_clear(struct senarena *restrict arena);
+senmac_public void senarena_free(struct senarena arena);
+senmac_public uintptr_t senarena_alloc_more(struct senarena *restrict arena, size_t amount, size_t alignment);
 
 #define senarena_alloc_type(arena, type) senarena_alloc((arena), sizeof(type), SENARENA_ALIGNOF(type))
 #define senarena_alloc_array_of(arena, type, amount) senarena_alloc(arena, sizeof(type) * amount, SENARENA_ALIGNOF(type))
@@ -80,12 +89,7 @@ uintptr_t senarena_alloc_more(struct senarena *restrict arena, size_t amount, si
 #include <assert.h>
 #include <stdbool.h>
 
-#ifdef SENARENA_IMPL
-static
-#else
-extern
-#endif
-senarena_always_inline inline
+static senarena_always_inline
 uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
   // ptr           = 11010
   // 8             = 01000
@@ -102,9 +106,9 @@ uintptr_t senarena_extra_bytes_needed(uintptr_t ptr, uintptr_t alignment) {
 }
 
 #ifndef SENARENA_IMPL
-extern senarena_always_inline inline
-senarena_malloc
+extern senarena_always_inline
 #endif
+senarena_malloc
 void *senarena_alloc(struct senarena *restrict arena, size_t amount, size_t alignment) {
   assert(alignment > 0);
   {

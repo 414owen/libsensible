@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023 The libsensible Authors
+﻿// SPDX-FileCopyrightText: 2023 The libsensible Authors
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
@@ -9,8 +9,18 @@
 extern "C" {
 #endif
 
+#ifdef _WIN32
+# define SENTEST_TICK "OK"
+# define SENTEST_CROSS "FAIL"
+#else
+# define SENTEST_TICK "✓"
+# define SENTEST_CROSS "✕"
+#endif
+
 #include <stdbool.h>
 #include <stdio.h>
+
+#include "../../sensible-macros/include/sensible-macros.h"
 
 struct sentest_config {
   // Enable color output
@@ -47,25 +57,25 @@ struct sentest_config {
 
 struct sentest_state;
 
-struct sentest_state *sentest_start(struct sentest_config config);
+senmac_public struct sentest_state *sentest_start(struct sentest_config config);
 
-void sentest_group_start(struct sentest_state *state, char *name);
-bool sentest_group_should_continue(struct sentest_state *state);
-void sentest_group_end(struct sentest_state *state);
+senmac_public void sentest_group_start(struct sentest_state *state, char *name);
+senmac_public bool sentest_group_should_continue(struct sentest_state *state);
+senmac_public void sentest_group_end(struct sentest_state *state);
 
-void sentest_end_internal(struct sentest_state *state);
-bool sentest_test_should_continue(struct sentest_state *state);
-void sentest_start_internal(struct sentest_state *state, char *name);
+senmac_public void sentest_end_internal(struct sentest_state *state);
+senmac_public bool sentest_test_should_continue(struct sentest_state *state);
+senmac_public void sentest_start_internal(struct sentest_state *state, char *name);
 
 // Returns true on assertion failue
-bool sentest_assertf_internal(struct sentest_state *state, bool cond, const char *file, size_t line, const char *fmt, ...);
-void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...);
+senmac_public bool sentest_assertf_internal(struct sentest_state *state, bool cond, const char *file, size_t line, const char *fmt, ...);
+senmac_public void sentest_failf_internal(struct sentest_state *state, const char *file, size_t line, const char *fmt, ...);
 
 // Returns true if equal, false if not equal
-bool sentest_assert_eq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
-bool sentest_assert_neq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
+senmac_public bool sentest_assert_eq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
+senmac_public bool sentest_assert_neq_internal(struct sentest_state *state, bool is_eq, const char *file, size_t line, char *a, char *b);
 
-int sentest_finish(struct sentest_state *state);
+senmac_public int sentest_finish(struct sentest_state *state);
 
 #ifdef __cplusplus
 }

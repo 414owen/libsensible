@@ -5,8 +5,17 @@
 #ifndef SENSIBLE_TEST_SUITE_H
 #define SENSIBLE_TEST_SUITE_H
 
-#include "../src/sensible-test.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void run_sensible_test_suite(struct sentest_state *state);
+#include "../src/sensible-test.h"
+#include "../../sensible-macros/include/sensible-macros.h"
+
+senmac_public void run_sensible_test_suite(struct sentest_state *state);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

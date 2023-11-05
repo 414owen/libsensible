@@ -9,30 +9,20 @@
 extern "C" {
 #endif
 
-#if defined(WIN32)
-
-#include <stdint.h>
-#include <profileapi.h>
-
-struct seninstant {
-  uint64_t value;
-};
-
+#ifdef _WIN32
+# include "sensible-timing-windows.h"
 #else
-
-#define _XOPEN_SOURCE 500
-// assume POSIX
-#include <stdint.h>
-#include <time.h>
-
-struct seninstant {
-  struct timespec value;
-};
-
+# include "sensible-timing-posix.h"
 #endif
 
-struct seninstant seninstant_now(void);
-uint64_t seninstant_subtract(struct seninstant end, struct seninstant begin);
+#include <stdbool.h>
+#include <stdint.h>
+#include "../../sensible-macros/include/sensible-macros.h"
+
+senmac_public struct seninstant seninstant_now(void);
+senmac_public uint64_t seninstant_subtract(struct seninstant end, struct seninstant begin);
+
+senmac_public bool sentiming_microsleep(uint64_t micros);
 
 #ifdef __cplusplus
 }

@@ -9,7 +9,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <time.h>
-#include <unistd.h>
 
 #include "../../../sensible-test/src/sensible-test.h"
 #include "../../../sensible-timing/src/sensible-timing.h"

@@ -13,7 +13,7 @@
 int main(void) {
   {
     time_t now = time(NULL);
-    printf("Using random seed: %ld\n", now);
+    printf("Using random seed: %llu\n", now);
     srand(now);
   }
   struct sentest_config config = {

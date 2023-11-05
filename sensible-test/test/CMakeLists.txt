@@ -11,6 +11,12 @@ add_custom_target(${PROJECT_NAME}-test-bench
 )
 
 add_library(${PROJECT_NAME}-test-suite SHARED suite.c)
+target_link_libraries(
+  ${PROJECT_NAME}-test-suite
+  ${PROJECT_NAME}-test
+)
+set_target_properties(${PROJECT_NAME}-test-suite PROPERTIES LINKER_LANGUAGE C)
+
 add_executable(${PROJECT_NAME}-test-suite-exe main.c)
 target_link_libraries(
   ${PROJECT_NAME}-test-suite-exe

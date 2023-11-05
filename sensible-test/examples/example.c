@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2023 The libsensible Authors
+//
+// SPDX-License-Identifier: Unlicense
+
 #include "../src/sensible-test.h"
 
 int main(void) {

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: BSD-3-Clause
 
+
 #include <assert.h>
 #include <stdarg.h>
 #include <stdbool.h>
@@ -12,6 +13,8 @@
 #include <time.h>
 
 #include "sensible-test.h"
+
+#include "../../sensible-macros/include/sensible-macros.h"
 
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 
@@ -199,7 +202,7 @@ void sentest_vec_char_push_pathseg(struct sentest_vec_char *vec, const char *str
 
 // Push a string into a buffer of strings
 static
-void sentest_vec_char_push_string(struct sentest_vec_char *restrict vec, const char *restrict str, size_t length) {
+void sentest_vec_char_push_string(struct sentest_vec_char *__restrict vec, const char *restrict str, size_t length) {
   if (vec->length + length + 1 > vec->capacity) {
     vec->capacity = MAX(vec->capacity + (vec->capacity >> 1), vec->length + length + 1);
     vec->data = realloc(vec->data, vec->capacity);
@@ -460,6 +463,7 @@ void sentest_write_results(struct sentest_state *restrict state) {
   free(all_depths);
 }
 
+senmac_public
 void sentest_group_start(struct sentest_state *restrict state, char *name) {
   assert(!state->in_test);
   sentest_print_depth_indent(state);
@@ -474,6 +478,7 @@ void sentest_group_start(struct sentest_state *restrict state, char *name) {
   sentest_push_string(state, name, length);
 }
 
+senmac_public
 void sentest_group_end(struct sentest_state *restrict state) {
   assert(!state->in_test);
   if (state->config.filter_str != NULL) {
@@ -484,6 +489,7 @@ void sentest_group_end(struct sentest_state *restrict state) {
   sentest_vec_test_action_push(&state->actions, GROUP_LEAVE);
 }
 
+senmac_public
 void sentest_failf_internal(struct sentest_state *restrict state, const char *file, size_t line, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
@@ -491,6 +497,7 @@ void sentest_failf_internal(struct sentest_state *restrict state, const char *fi
   va_end(ap);
 }
 
+senmac_public
 bool sentest_assertf_internal(struct sentest_state *restrict state, bool cond, const char *file, size_t line, const char *fmt, ...) {
   if (cond) { return false; }
   va_list ap;
@@ -500,18 +507,21 @@ bool sentest_assertf_internal(struct sentest_state *restrict state, bool cond, c
   return true;
 }
 
+senmac_public
 bool sentest_assert_eq_internal(struct sentest_state *restrict state, bool is_equal, const char *file, size_t line, char *a, char *b) {
   if (is_equal) return false;
   sentest_failf_internal(state, file, line, "Assert failed: '%s' == '%s'", a, b);
   return true;
 }
 
+senmac_public
 bool sentest_assert_neq_internal(struct sentest_state *restrict state, bool is_equal, const char *file, size_t line, char *a, char *b) {
   if (!is_equal) return false;
   sentest_failf_internal(state, file, line, "Assert failed: '%s' != '%s'", a, b);
   return true;
 }
 
+senmac_public
 void sentest_start_internal(struct sentest_state *restrict state, char *name) {
   assert(!state->in_test);
   assert(state->depth > 0);
@@ -543,10 +553,11 @@ void sentest_start_internal(struct sentest_state *restrict state, char *name) {
   sentest_push_string(state, name, length);
 }
 
+senmac_public
 void sentest_end_internal(struct sentest_state *restrict state) {
   fprintf(state->config.output, "%s%s%s\n",
     sentest_color(state, state->current_failed ? TERM_RED : TERM_GREEN),
-    state->current_failed ? "✕" : "✓",
+    state->current_failed ? SENTEST_CROSS : SENTEST_TICK,
     sentest_color(state, TERM_RESET));
   if (!state->current_failed)
     state->tests_passed++;
@@ -555,6 +566,7 @@ void sentest_end_internal(struct sentest_state *restrict state) {
   sentest_vec_test_action_push(&state->actions, TEST_LEAVE);
 }
 
+senmac_public
 struct sentest_state *sentest_start(struct sentest_config config) {
   struct sentest_state *res = (struct sentest_state*) malloc(sizeof(struct sentest_state));
   struct sentest_state state = {
@@ -579,11 +591,13 @@ struct sentest_state *sentest_start(struct sentest_config config) {
   return res;
 }
 
+senmac_public
 bool sentest_test_should_continue(struct sentest_state *restrict state) {
   // not in_test can also mean didn't match filter
   return state->in_test;
 }
 
+senmac_public
 bool sentest_group_should_continue(struct sentest_state *restrict state) {
   bool res = state->should_exit_group;
   if (res) {
@@ -592,6 +606,7 @@ bool sentest_group_should_continue(struct sentest_state *restrict state) {
   return !res;
 }
 
+senmac_public
 int sentest_finish(struct sentest_state *restrict state) {
   state->end_time = clock();
   bool had_failure = sentest_print_failures(state);

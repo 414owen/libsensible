@@ -12,6 +12,8 @@ extern "C" {
 #include <stdbool.h>
 #include <stdlib.h>
 
+#include "../../sensible-macros/include/sensible-macros.h"
+
 enum senargs_argument_type {
   SENARG_FLAG,
   SENARG_STRING,
@@ -57,12 +59,8 @@ struct senargs_description {
   const bool do_not_panic;
 };
 
-struct senargs_result {
-  bool success;
-};
-
-void senargs_parse(struct senargs_description args, int argc, char **argv);
-void senargs_print_help(struct senargs_description program_args, int argc, char **argv);
+senmac_public void senargs_parse(struct senargs_description args, int argc, char **argv);
+senmac_public void senargs_print_help(struct senargs_description program_args, int argc, char **argv);
 
 #ifdef __cplusplus
 }

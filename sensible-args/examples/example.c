@@ -1,11 +1,13 @@
+// SPDX-FileCopyrightText: 2023 The libsensible Authors
+//
+// SPDX-License-Identifier: Unlicense
+
 #include <stdio.h>
 #include <ctype.h>
 
 #include "../src/sensible-args.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
-
-static void pass(char *a) {(void) a;}
 
 static void upcase(char *a) {
   size_t i = 0;

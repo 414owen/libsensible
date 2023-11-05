@@ -10,13 +10,16 @@
 
 #include "../src/sensible-arena.h"
 #include "../../../sensible-test/src/sensible-test.h"
+#include "../../../sensible-macros/include/sensible-macros.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+static
 int one_in(int n) {
   return rand() % n == 0;
 }
 
+senmac_public
 void run_sensible_arena_suite(struct sentest_state *state) {
   sentest_group(state, "sensible-arena") {
     sentest(state, "can be constructed and freed") {

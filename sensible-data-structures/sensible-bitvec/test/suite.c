@@ -9,9 +9,11 @@
 
 #include "../src/sensible-bitvec.h"
 #include "../../../sensible-test/src/sensible-test.h"
+#include "../../../sensible-macros/include/sensible-macros.h"
 
 #define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+senmac_public
 void run_sensible_bitvec_suite(struct sentest_state *state) {
   sentest_group(state, "sensible-bitvec") {
     sentest(state, "can be allocated and freed") {
