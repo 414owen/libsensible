@@ -17,14 +17,11 @@ a frictionless test library, which your CI understands.
 Some libraries fill in the cracks between platforms, `sensible-timing` will
 be one of these.
 
-Principles:
-
-* ISO-C99 compliant, so that it can run on your microwave
-* Memory management should fit the problem
-* Pretty much everything should take a (void*) context
-* Code should be optimized for readability
+* ISO-C99 compliant
 * Zero dependencies
-* Build process should be trivial
+* Trivial to build
+* Tested on Linux, MacOS, and Windows
+* Benchmarked, where appropriate
 
 ## [sensible-test](./sensible-test)
 
