@@ -8,10 +8,6 @@ Files: flake.lock
 Copyright: 2023 The libsensible Authors
 License: CC0-1.0
 
-Files: .clangd
-Copyright: 2023 The libsensible Authors
-License: CC0-1.0
-
 Files: .envrc
 Copyright: 2023 The libsensible Authors
 License: CC0-1.0
