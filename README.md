@@ -26,12 +26,12 @@ Principles:
 * Zero dependencies
 * Build process should be trivial
 
-## sensible-test
+## [sensible-test](./sensible-test)
 
-* Testing should be easy
-* Testing should expose results to CI
-* Tests descriptions form a tree
-* Tests should be filterable
+* Tests form trees
+* Test declaration syntax mirrors the test tree
+* Exposes results to in machine readable format for CI
+* Tests are filterable
 
 ### Example test
 
@@ -59,24 +59,23 @@ the number one
   isn't number two ✓
 ```
 
-## sensible-arena
+## [sensible-arena](./sensible-allocators/sensible-arena)
 
 * Incredibly optimized fast path
 * Fast path is inlined by default
 * Speeds up allocations by multiple times compared to general-purpose allocator
 * Conceptually simple memory management
 
-## sensible-timing
+## [sensible-timing](./sensible-timing)
 
 Gives you an as-monotonic-as-possible, as-accurate-as-possible,
-as-wall-time-as-possible timing API. Works on linux, probably works on
-modernish POSIXes, and might work on Windows.
+as-wall-time-as-possible timing API.
 
-## sensible-bitvec
+## [sensible-bitvec](./sensible-bitvec)
 
 This is a bitvector.
 
-## sensible-args
+## [sensible-args](./sensible-args)
 
 Status: Work in progress
 

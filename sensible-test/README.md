@@ -6,19 +6,33 @@ SPDX-License-Identifier: Unlicense
 
 # sensible-test
 
-Usage:
+* Tests form trees
+* Test declaration syntax mirrors the test tree
+* Exposes results to in machine readable format for CI
+* Tests are filterable
+
+### Example test
 
 ```C
-int main(void) {
-  struct sentest_state *state = sentest_start(config);
-  sentest_group(state, "the number one") {
-    sentest(state, "is number one") {
+struct sentest_state *state = sentest_start(config);
+sentest_group(state, "the number one") {
+  sentest_group(state, "compared to one") {
+    sentest(state, "is considered equal") {
       sentest_assert_eq(state, 1, 1);
     }
-    sentest(state, "isn't number two") {
-      sentest_assert_neq(state, 1, 2);
-    }
   }
-  sentest_finish(state);
+  sentest(state, "isn't number two") {
+    sentest_assert_neq(state, 1, 2);
+  }
 }
+sentest_finish(state);
+```
+
+### Example output
+
+```
+the number one
+  compared to one
+    is considered equal ✓
+  isn't number two ✓
 ```
