@@ -8,7 +8,8 @@ SPDX-License-Identifier: CC0-1.0
 
 [![ci tests](https://img.shields.io/github/actions/workflow/status/414owen/libsensible/Tests)](https://github.com/414owen/libsensible/actions/workflows/tests.yml)
 ![license badge](https://img.shields.io/github/license/414owen/libsensible)
-![c language badge](https://img.shields.io/badge/made%20with-C99-blue?logo=c)
+![c language badge](https://img.shields.io/badge/-C99-blue?logo=c)
+![cmake badge](https://img.shields.io/badge/-cmake-blue?logo=cmake)
 
 A collection of C libraries for writing sensible, threadsafe, fast code.
 
