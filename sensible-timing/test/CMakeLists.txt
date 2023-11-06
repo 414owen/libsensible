@@ -26,10 +26,16 @@ add_custom_target(${PROJECT_NAME}-timing-check
   COMMENT "Run test suite"
 )
 
-add_executable(${PROJECT_NAME}-timing-measure-sleep-variation measure-sleep-variation.c)
+add_executable(${PROJECT_NAME}-timing-measure-sleep-variation-exe measure-sleep-variation.c)
 
 target_link_libraries(
-  ${PROJECT_NAME}-timing-measure-sleep-variation
+  ${PROJECT_NAME}-timing-measure-sleep-variation-exe
   PRIVATE
     ${PROJECT_NAME}-timing
+    ${PROJECT_NAME}-macros
+)
+
+add_custom_target(${PROJECT_NAME}-timing-measure-sleep-variation
+  COMMAND ${PROJECT_NAME}-timing-measure-sleep-variation-exe
+  COMMENT "Measure sleep times"
 )
