@@ -30,7 +30,7 @@
 
         src = ./.;
 
-        nativBuildInputs = [
+        nativeBuildInputs = [
           pkgs.cmake
         ];
 

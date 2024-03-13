@@ -18,3 +18,4 @@ CMakeSettings.json
 
 # sensible-test outputs
 *.xml
+result
