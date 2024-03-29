@@ -19,6 +19,8 @@ target_sources(${PROJECT_NAME}-timing
     BASE_DIRS include
     FILES
       include/sensible-timing.h
+      include/sensible-timing-windows.h
+      include/sensible-timing-posix.h
 )
 
 set_target_properties(${PROJECT_NAME}-timing PROPERTIES VERSION ${PROJECT_VERSION})
