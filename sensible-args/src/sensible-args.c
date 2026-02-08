@@ -72,7 +72,8 @@ size_t senargs_safe_strlen(const char *str) {
 static
 void print_argument(struct senargs_argument a, int max_long_len, int max_type_len) {
   const char *type_str = type_strs[a.tag];
-  printf("  -%c%*s--%s%*s  %s\n",
+  printf("  %c%c%*s--%s%*s  %s\n",
+         a.small == '\0' ? ' ' : '-',
          a.small == '\0' ? ' ' : a.small,
          2 + max_long_len - (int)senargs_safe_strlen(a.full),
          "",
