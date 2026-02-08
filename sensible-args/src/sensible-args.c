@@ -340,7 +340,7 @@ void preprocess_and_validate_args(struct senargs_argument_bag bag) {
     if (a.tag == SENARG_SUBCOMMAND) {
       preprocess_and_validate_args(a.data.subcommand.subs);
     }
-    assert(a.full == 0 || valid_short_flag(a.small));
+    assert(a.full != 0 || valid_short_flag(a.small));
   }
 }
 
