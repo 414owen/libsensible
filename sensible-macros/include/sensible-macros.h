@@ -13,11 +13,9 @@ extern "C" {
 
 #define senmac_public HEDLEY_PUBLIC
 
-// cl.exe doesn't seem to recognise 'restrict', even though
-// it's standard C
-#ifdef _WIN32
-# define restrict HEDLEY_RESTRICT
-#endif
+#define restrict HEDLEY_RESTRICT
+
+#define STATIC_LEN(arr) (sizeof(arr) / sizeof((arr)[0]))
 
 #ifdef __cplusplus
 }
